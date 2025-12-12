@@ -12,6 +12,9 @@ export default function Profile() {
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   
+  // 🔥 State เช็คว่าเป็น User แบบ Email หรือไม่
+  const [isEmailUser, setIsEmailUser] = useState(false);
+  
   // UI States
   const [isEditingName, setIsEditingName] = useState(false);
   const [newName, setNewName] = useState('');
@@ -24,7 +27,14 @@ export default function Profile() {
   const fetchData = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { navigate('/'); return; }
+    
     setEmail(user.email);
+
+    // 🔥 เช็คว่า Login ด้วย Email หรือไม่ (ถ้าใช่ provider จะเป็น 'email')
+    // ถ้า Login ด้วย Google provider จะเป็น 'google'
+    if (user.app_metadata.provider === 'email') {
+        setIsEmailUser(true);
+    }
 
     // 1. ดึง Profile
     const { data: profileData } = await supabase.from('profiles').select('*').eq('id', user.id).single();
@@ -51,7 +61,7 @@ export default function Profile() {
   const handleChangePassword = async () => {
     if (!confirm("ระบบจะส่งลิงก์เปลี่ยนรหัสผ่านไปที่อีเมลของคุณ ยืนยัน?")) return;
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: window.location.origin + '/update-password', // (ต้องไปทำหน้านี้เพิ่มถ้าต้องการ flow สมบูรณ์ แต่แค่นี้ก็ส่งเมลได้)
+      redirectTo: window.location.origin + '/update-password',
     });
     if (error) alert("Error: " + error.message);
     else alert(`📧 ส่งลิงก์เปลี่ยนรหัสไปที่ ${email} แล้วครับ!`);
@@ -129,7 +139,7 @@ export default function Profile() {
                 </div>
             </div>
 
-            {/* ⭐ ปุ่มดูรีวิว (เพิ่มใหม่) */}
+            {/* ⭐ ปุ่มดูรีวิว */}
             <button onClick={() => setShowReviewsModal(true)} className="w-full bg-white/5 p-4 rounded-2xl border border-white/10 flex items-center gap-4 hover:bg-white/10 transition text-left group">
                 <div className="bg-yellow-500/20 p-3 rounded-full text-yellow-300 group-hover:scale-110 transition"><Star size={20}/></div>
                 <div className="flex-1">
@@ -139,14 +149,16 @@ export default function Profile() {
                 <ChevronLeft size={20} className="rotate-180 text-gray-500 group-hover:text-white transition" />
             </button>
 
-            {/* 🔐 ปุ่มเปลี่ยนรหัส (เพิ่มใหม่) */}
-            <button onClick={handleChangePassword} className="w-full bg-white/5 p-4 rounded-2xl border border-white/10 flex items-center gap-4 hover:bg-white/10 transition text-left group">
-                <div className="bg-orange-500/20 p-3 rounded-full text-orange-300 group-hover:scale-110 transition"><Key size={20}/></div>
-                <div className="flex-1">
-                    <p className="text-xs text-gray-400 uppercase">ความปลอดภัย</p>
-                    <p className="text-white">เปลี่ยนรหัสผ่าน</p>
-                </div>
-            </button>
+            {/* 🔐 ปุ่มเปลี่ยนรหัส (โชว์เฉพาะคนใช้ Email Login) */}
+            {isEmailUser && (
+                <button onClick={handleChangePassword} className="w-full bg-white/5 p-4 rounded-2xl border border-white/10 flex items-center gap-4 hover:bg-white/10 transition text-left group">
+                    <div className="bg-orange-500/20 p-3 rounded-full text-orange-300 group-hover:scale-110 transition"><Key size={20}/></div>
+                    <div className="flex-1">
+                        <p className="text-xs text-gray-400 uppercase">ความปลอดภัย</p>
+                        <p className="text-white">เปลี่ยนรหัสผ่าน</p>
+                    </div>
+                </button>
+            )}
 
         </div>
 
