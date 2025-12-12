@@ -10,6 +10,17 @@
   to { transform: translateY(-2000px); }
 }
 
+html, body {
+  height: 100%;
+  width: 100%;
+  overflow: hidden; /* ให้ React จัดการ Scroll เอง */
+  overscroll-behavior: none; /* ห้ามเด้งสู้มือ */
+}
+
+#root {
+  height: 100%;
+}
+
 /* =========================================
    💜 BODY & BACKGROUND (PURPLE THEME)
    ========================================= */
