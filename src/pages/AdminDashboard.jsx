@@ -97,26 +97,22 @@ export default function AdminDashboard() {
     fetchData();
   };
 
-  // 🔥 ฟังก์ชันลบ User (ใหม่)
+  // 🔥 ฟังก์ชันลบ User (ใช้ RPC ตัวใหม่ที่แก้ชื่อตัวแปรแล้ว)
   const handleDeleteUser = async (user) => {
-    // ถามย้ำเพื่อความชัวร์
-    const confirmDelete = window.prompt(`พิมพ์ "delete" เพื่อยืนยันการลบผู้ใช้ ${user.username} (กู้คืนไม่ได้)`);
+    const confirmDelete = window.prompt(`พิมพ์ "delete" เพื่อยืนยันการลบผู้ใช้ ${user.username} (ลบถาวรทั้งบัญชีและข้อมูล)`);
     if (confirmDelete !== 'delete') return;
 
     try {
-        // 1. ลบข้อมูลที่เกี่ยวข้องก่อน (Manual Cascade) เพื่อไม่ให้ติด Error Foreign Key
-        await supabase.from('reports').delete().or(`reporter_id.eq.${user.id},reported_id.eq.${user.id}`);
-        await supabase.from('queue').delete().eq('user_id', user.id);
-        await supabase.from('reviews').delete().or(`reviewer_id.eq.${user.id},target_user_id.eq.${user.id}`);
-        
-        // 2. ลบ Profile
-        const { error } = await supabase.from('profiles').delete().eq('id', user.id);
+        const { error } = await supabase.rpc('delete_user_complete', { 
+            _uid: user.id  // ✅ ใช้ _uid เพื่อไม่ให้ซ้ำกับชื่อคอลัมน์
+        });
 
         if (error) throw error;
 
-        alert(`🗑️ ลบผู้ใช้ ${user.username} เรียบร้อยแล้ว`);
+        alert(`🗑️ ลบผู้ใช้ ${user.username} ออกจากระบบถาวรเรียบร้อยแล้ว!`);
         fetchData();
     } catch (error) {
+        console.error("Delete Error:", error);
         alert("เกิดข้อผิดพลาดในการลบ: " + error.message);
     }
   };
