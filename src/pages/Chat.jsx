@@ -27,7 +27,7 @@ export default function Chat() {
   const intervalRef = useRef(null);
   const channelRef = useRef(null);
 
-  // เลื่อนลงล่างสุด (ใช้เฉพาะตอนมีข้อความใหม่)
+  // สั่ง Scroll ลงล่างสุด
   const scrollToBottom = () => { 
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
@@ -87,7 +87,8 @@ export default function Chat() {
       }
 
       await fetchMessages();
-      scrollToBottom();
+      // รอแป๊บนึงให้ DOM วาดเสร็จแล้วค่อยเลื่อนลง
+      setTimeout(scrollToBottom, 100);
 
       channelRef.current = supabase.channel(`room-${matchId}`)
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `match_id=eq.${matchId}` }, (payload) => {
@@ -144,7 +145,7 @@ export default function Chat() {
     navigate('/thank-you-talker', { replace: true });
   };
 
-  // ... (Modal ส่วนรายงาน คงเดิม) ...
+  // ... (ส่วน Modal รายงาน คงเดิม) ...
   if (showReportModal) return (
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
         <div className="bg-soulis-800 border border-soulis-600 p-6 rounded-2xl w-full max-w-sm animate-float">
@@ -162,7 +163,7 @@ export default function Chat() {
       </div>
   );
 
-  // ... (Modal ส่วนให้คะแนน คงเดิม) ...
+  // ... (ส่วน Modal ให้คะแนน คงเดิม) ...
   if (showRating) return (
       <div className="min-h-screen flex items-center justify-center bg-soulis-900 p-4 relative z-50">
         <div className="bg-white/10 backdrop-blur-xl border border-white/20 p-8 rounded-3xl shadow-2xl w-full max-w-md text-center animate-float">
@@ -180,11 +181,13 @@ export default function Chat() {
   );
 
   return (
-    // 🔥 ใช้ h-[100dvh] (Dynamic Viewport Height) ตัวช่วยพระเอกของงาน
-    <div className="flex flex-col h-[100dvh] bg-soulis-900 relative overflow-hidden w-full">
+    // 🔥 ใช้ 100svh (Small Viewport) เพื่อให้ขนาดจอคงที่ ไม่เด้งตาม Address bar
+    <div className="bg-soulis-900 h-[100svh] w-full relative">
       
-      {/* Header */}
-      <header className="bg-soulis-900/80 backdrop-blur-md p-4 shadow flex justify-between items-center z-10 border-b border-white/5 flex-none">
+      {/* 🔥 HEADER: Fixed Top 
+         ตอกหมุดไว้ด้านบนสุด สูง 4rem (h-16)
+      */}
+      <header className="fixed top-0 left-0 right-0 h-16 z-50 bg-soulis-900/90 backdrop-blur-md px-4 shadow-md flex justify-between items-center border-b border-white/5">
         <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-gradient-to-br from-soulis-500 to-soulis-700 rounded-full flex items-center justify-center shadow-md"><User className="text-white w-5 h-5" /></div>
             <div>
@@ -198,8 +201,13 @@ export default function Chat() {
         </div>
       </header>
 
-      {/* Chat Area */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
+      {/* 🔥 CHAT AREA: 
+         - ใช้ h-full เพื่อให้เต็มจอ
+         - เพิ่ม padding-top (pt-16) หลบ Header
+         - เพิ่ม padding-bottom (pb-24) หลบ Input Bar
+         - overflow-y-auto ให้เลื่อนเฉพาะตรงกลาง
+      */}
+      <div className="h-full overflow-y-auto pt-16 pb-24 px-4 space-y-3 custom-scrollbar">
         {messages.map((msg, index) => {
             const isMe = msg.sender_id === userId;
             const isSeq = index > 0 && messages[index - 1].sender_id === msg.sender_id;
@@ -217,22 +225,23 @@ export default function Chat() {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input */}
-      <form onSubmit={sendMessage} className="p-3 bg-soulis-900/95 backdrop-blur-md flex gap-2 border-t border-white/5 flex-none safe-area-bottom">
+      {/* 🔥 INPUT BAR: Fixed Bottom
+         ตอกหมุดไว้ล่างสุดเสมอ (จะถูกคีย์บอร์ดดันขึ้นอัตโนมัติด้วยคำสั่งใน index.html)
+      */}
+      <form onSubmit={sendMessage} className="fixed bottom-0 left-0 right-0 z-50 p-3 bg-soulis-900/95 backdrop-blur-xl border-t border-white/5 flex gap-2 safe-area-bottom">
         <input 
             type="text" 
             value={newMessage} 
             onChange={(e) => setNewMessage(e.target.value)} 
-            // 🔥 ลบ onFocus ที่สั่ง Scroll ออก (ปล่อยให้ Browser จัดการเอง จะได้ไม่เด้งมั่ว)
             className="flex-1 bg-white/5 text-white placeholder-gray-400 border border-white/10 rounded-full px-5 py-3 focus:outline-none focus:bg-white/10 focus:border-soulis-500 transition text-sm md:text-base" 
             placeholder="พิมพ์ข้อความ..." 
         />
         <button type="submit" disabled={!newMessage.trim()} className="bg-soulis-500 hover:bg-soulis-400 text-white p-3 rounded-full transition shadow-lg shadow-soulis-500/30 disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"><Send size={20}/></button>
       </form>
 
-      {/* Confirm Modal */}
+      {/* Confirm Modal (เหมือนเดิม) */}
       {showConfirmEnd && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
             <div className="bg-soulis-800 border border-soulis-600 p-6 rounded-2xl w-full max-w-sm text-center animate-float">
                 <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-4" />
                 <h3 className="text-xl font-bold text-white mb-4">ต้องการจบสนทนา?</h3>
