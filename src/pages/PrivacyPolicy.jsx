@@ -5,9 +5,16 @@ export default function PrivacyPolicy() {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-6 relative overflow-hidden">
+    <div className="fixed inset-0 z-10 bg-soulis-900 h-[100dvh] w-full overflow-y-auto overflow-x-hidden font-sans">
       
-      <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-8 md:p-12 rounded-[2rem] shadow-2xl w-full max-w-4xl relative z-10 h-[80vh] flex flex-col">
+      {/* Wrapper: ใช้ min-h-full เพื่อยืดเนื้อหา และ pt/pb เพื่อกันขอบบนล่าง */}
+      <div className="min-h-full w-full flex flex-col items-center justify-center p-6 pt-24 pb-32">
+
+        {/* Background Elements (Fixed เพื่อความนิ่ง) */}
+        <div className="fixed top-[-10%] left-1/2 transform -translate-x-1/2 w-[800px] h-[500px] bg-soulis-600/20 rounded-full blur-[120px] pointer-events-none -z-10"></div>
+
+        {/* Main Card */}
+        <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-8 md:p-12 rounded-[2rem] shadow-2xl w-full max-w-3xl relative z-20 animate-float">
         
         <div className="flex justify-between items-center mb-6 pb-6 border-b border-white/10">
             <div className="flex items-center gap-3">
@@ -65,6 +72,7 @@ export default function PrivacyPolicy() {
 
         </div>
       </div>
+    </div>
     </div>
   );
 }
