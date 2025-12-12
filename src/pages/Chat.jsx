@@ -22,49 +22,14 @@ export default function Chat() {
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState('');
   
-  // 🔥 State ความสูงหน้าจอ
-  const [viewportHeight, setViewportHeight] = useState('100%');
-
   const messagesEndRef = useRef(null);
-  const inputRef = useRef(null); // 🔥 เพิ่ม Ref ให้ช่องพิมพ์
   const isFinished = useRef(false);
   const intervalRef = useRef(null);
   const channelRef = useRef(null);
 
-  // 🔥 ฟังก์ชันจัดการหน้าจอเมื่อคีย์บอร์ดขึ้น
-  useEffect(() => {
-    // 1. ปรับความสูงตาม Visual Viewport (พื้นที่ที่มองเห็นจริง)
-    const handleResize = () => {
-      if (window.visualViewport) {
-        setViewportHeight(`${window.visualViewport.height}px`);
-        scrollToBottom();
-      }
-    };
-
-    if (window.visualViewport) {
-      window.visualViewport.addEventListener('resize', handleResize);
-      handleResize(); // เรียกทันทีตอนเริ่ม
-    }
-
-    return () => {
-      if (window.visualViewport) {
-        window.visualViewport.removeEventListener('resize', handleResize);
-      }
-    };
-  }, []);
-
+  // เลื่อนลงล่างสุด (ใช้เฉพาะตอนมีข้อความใหม่)
   const scrollToBottom = () => { 
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
-  // 🔥 ฟังก์ชันใหม่: เมื่อจิ้มช่องพิมพ์ ให้ดันจอขึ้นมา
-  const handleInputFocus = () => {
-    // รอแป๊บนึงให้คีย์บอร์ดเด้งสุดก่อน
-    setTimeout(() => {
-        // สั่งให้ Browser เลื่อนหาช่องพิมพ์จนเจอ
-        inputRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-        scrollToBottom();
-    }, 300);
   };
 
   const killSystem = () => {
@@ -179,10 +144,10 @@ export default function Chat() {
     navigate('/thank-you-talker', { replace: true });
   };
 
+  // ... (Modal ส่วนรายงาน คงเดิม) ...
   if (showReportModal) return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" style={{ height: viewportHeight }}>
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
         <div className="bg-soulis-800 border border-soulis-600 p-6 rounded-2xl w-full max-w-sm animate-float">
-          {/* ... Modal Content ... */}
           <div className="flex justify-between items-center mb-4 border-b border-white/10 pb-4">
             <h3 className="text-xl font-bold text-white flex items-center gap-2"><Flag className="text-red-500" /> รายงานผู้ใช้</h3>
             <button onClick={() => setShowReportModal(false)} className="text-gray-400 hover:text-white"><X /></button>
@@ -197,10 +162,10 @@ export default function Chat() {
       </div>
   );
 
+  // ... (Modal ส่วนให้คะแนน คงเดิม) ...
   if (showRating) return (
       <div className="min-h-screen flex items-center justify-center bg-soulis-900 p-4 relative z-50">
         <div className="bg-white/10 backdrop-blur-xl border border-white/20 p-8 rounded-3xl shadow-2xl w-full max-w-md text-center animate-float">
-          {/* ... Rating Content ... */}
           <h2 className="text-2xl font-bold text-white mb-4">จบการสนทนาแล้ว</h2>
           <div className="flex justify-center gap-2 mb-6">
             {[...Array(10)].map((_, i) => (
@@ -215,11 +180,8 @@ export default function Chat() {
   );
 
   return (
-    // 🔥 Container หลัก: ใช้ความสูงจาก JS (viewportHeight)
-    <div 
-        className="flex flex-col bg-soulis-900 relative overflow-hidden w-full"
-        style={{ height: viewportHeight }} 
-    >
+    // 🔥 ใช้ h-[100dvh] (Dynamic Viewport Height) ตัวช่วยพระเอกของงาน
+    <div className="flex flex-col h-[100dvh] bg-soulis-900 relative overflow-hidden w-full">
       
       {/* Header */}
       <header className="bg-soulis-900/80 backdrop-blur-md p-4 shadow flex justify-between items-center z-10 border-b border-white/5 flex-none">
@@ -258,21 +220,19 @@ export default function Chat() {
       {/* Input */}
       <form onSubmit={sendMessage} className="p-3 bg-soulis-900/95 backdrop-blur-md flex gap-2 border-t border-white/5 flex-none safe-area-bottom">
         <input 
-            ref={inputRef} // 🔥 ผูก Ref เพื่อสั่ง Scroll
             type="text" 
             value={newMessage} 
             onChange={(e) => setNewMessage(e.target.value)} 
-            onFocus={handleInputFocus} // 🔥 แตะปุ๊บ สั่งดันจอขึ้น
+            // 🔥 ลบ onFocus ที่สั่ง Scroll ออก (ปล่อยให้ Browser จัดการเอง จะได้ไม่เด้งมั่ว)
             className="flex-1 bg-white/5 text-white placeholder-gray-400 border border-white/10 rounded-full px-5 py-3 focus:outline-none focus:bg-white/10 focus:border-soulis-500 transition text-sm md:text-base" 
             placeholder="พิมพ์ข้อความ..." 
         />
         <button type="submit" disabled={!newMessage.trim()} className="bg-soulis-500 hover:bg-soulis-400 text-white p-3 rounded-full transition shadow-lg shadow-soulis-500/30 disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"><Send size={20}/></button>
       </form>
 
-      {/* Confirm Modal (เหมือนเดิม) */}
+      {/* Confirm Modal */}
       {showConfirmEnd && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" style={{ height: viewportHeight }}>
-            {/* ... Modal ... */}
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
             <div className="bg-soulis-800 border border-soulis-600 p-6 rounded-2xl w-full max-w-sm text-center animate-float">
                 <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-4" />
                 <h3 className="text-xl font-bold text-white mb-4">ต้องการจบสนทนา?</h3>
