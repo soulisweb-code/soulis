@@ -13,6 +13,9 @@ export default function Login() {
   const [agreedToPolicy, setAgreedToPolicy] = useState(false);
   const [showPolicyModal, setShowPolicyModal] = useState(false);
   
+  // 🔥 เพิ่ม State ตัวนี้: เอาไว้จำว่า "เมื่อกี้เขากดปุ่ม Google ใช่ไหม?"
+  const [isGoogleLogin, setIsGoogleLogin] = useState(false);
+  
   const navigate = useNavigate();
 
   const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -37,7 +40,7 @@ export default function Login() {
         if (error) throw error;
 
         const { error: profileError } = await supabase.from('profiles').insert([{ id: data.user.id, username }]);
-        if (profileError) console.error(profileError);
+        if (profileError) console.error("Profile creation error:", profileError);
 
         alert('🎉 สมัครสำเร็จ! ยินดีต้อนรับสู่ Soulis');
         setMode('login');
@@ -74,7 +77,8 @@ export default function Login() {
     }
   };
 
-  const handleGoogleLogin = async () => {
+  // ฟังก์ชัน Login จริงๆ (จะถูกเรียกหลังจากกดตกลงใน Modal)
+  const performGoogleLogin = async () => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: { redirectTo: window.location.origin + '/select-role' }
@@ -82,10 +86,26 @@ export default function Login() {
     if (error) alert(error.message);
   };
 
+  // 🔥 ฟังก์ชันเมื่อกดปุ่ม Google (แค่เปิด Modal ยังไม่ล็อกอิน)
+  const handleGoogleClick = () => {
+    setIsGoogleLogin(true); // จำไว้ว่าคนนี้กด Google
+    setShowPolicyModal(true); // เปิด Modal
+  };
+
+  // 🔥 ฟังก์ชันเมื่อกดปุ่ม "รับทราบ" ใน Modal
+  const handlePolicyAccept = () => {
+    setShowPolicyModal(false);
+    setAgreedToPolicy(true); // ติ๊กถูกให้อัตโนมัติ
+
+    // ถ้าเมื่อกี้กด Google มา -> ให้เด้งไปหน้า Google เลย
+    if (isGoogleLogin) {
+        performGoogleLogin();
+        setIsGoogleLogin(false); // Reset ค่า
+    }
+  };
+
   return (
     <div className="h-full w-full overflow-y-auto overflow-x-hidden bg-soulis-900 font-sans relative">
-      
-      {/* 🔥 แก้ตรงนี้: เพิ่ม w-full เพื่อให้ flex justify-center ทำงานได้เต็มจอ */}
       <div className="min-h-full w-full flex items-center justify-center p-4 py-10">
 
         <div className="fixed top-[-10%] left-[-10%] w-[600px] h-[600px] bg-soulis-500/20 rounded-full blur-[120px] animate-float-slow pointer-events-none"></div>
@@ -140,7 +160,8 @@ export default function Login() {
               <div className="flex-grow border-t border-white/10"></div>
           </div>
 
-          <button onClick={handleGoogleLogin} className="w-full bg-white text-gray-900 hover:bg-gray-100 py-3 rounded-xl font-bold flex items-center justify-center gap-3 transition transform active:scale-95 shadow-lg">
+          {/* 🔥 แก้ปุ่มนี้: เปลี่ยนจาก handleGoogleLogin เป็น handleGoogleClick */}
+          <button onClick={handleGoogleClick} className="w-full bg-white text-gray-900 hover:bg-gray-100 py-3 rounded-xl font-bold flex items-center justify-center gap-3 transition transform active:scale-95 shadow-lg">
               <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" className="w-5 h-5" /> เข้าสู่ระบบด้วย Google
           </button>
 
@@ -172,7 +193,10 @@ export default function Login() {
                 <p>4. กฎ: ห้ามหยาบคาย ห้ามคุกคาม</p>
                 <p className="text-center text-soulis-accent pt-2">"เพราะเราแคร์ความรู้สึกของคุณ"</p>
             </div>
-            <button onClick={() => { setShowPolicyModal(false); setAgreedToPolicy(true); }} className="w-full bg-soulis-600 hover:bg-soulis-500 mt-6 py-3 rounded-xl font-bold transition">รับทราบ</button>
+            {/* 🔥 แก้ปุ่มนี้: ให้เรียก handlePolicyAccept แทน */}
+            <button onClick={handlePolicyAccept} className="w-full bg-soulis-600 hover:bg-soulis-500 mt-6 py-3 rounded-xl font-bold transition">
+                {isGoogleLogin ? "ยอมรับและดำเนินการต่อด้วย Google" : "รับทราบ"}
+            </button>
           </div>
         </div>
       )}
