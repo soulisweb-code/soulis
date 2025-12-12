@@ -18,17 +18,17 @@ export default function Support() {
   };
 
   return (
-    // 🔥 1. Outer: กำหนดให้เป็นพื้นที่ Scroll (h-full + overflow-y-auto)
-    <div className="h-full w-full overflow-y-auto overflow-x-hidden font-sans relative bg-soulis-900">
+    // 🔥 แก้ไม้ตาย: ใช้ fixed inset-0 h-[100dvh] เพื่อสร้าง Layer การเลื่อนของตัวเองแยกจาก Body
+    <div className="fixed inset-0 h-[100dvh] w-full overflow-y-auto overflow-x-hidden bg-soulis-900 font-sans z-10">
       
-      {/* 🔥 2. Inner: จัดกึ่งกลาง และดันขอบบนล่าง (min-h-full + pt/pb เยอะๆ) */}
-      <div className="min-h-full flex flex-col items-center justify-center p-6 pt-24 pb-32">
+      {/* Wrapper ข้างใน: ใช้ min-h-full เพื่อให้เนื้อหาขยายได้ และ pt/pb เพื่อกันขอบ */}
+      <div className="min-h-full w-full flex flex-col items-center justify-center p-6 pt-24 pb-32">
 
-        {/* Background Elements (เปลี่ยนเป็น fixed จะได้ไม่เลื่อนตามเนื้อหา) */}
-        <div className="fixed top-[-20%] left-1/2 transform -translate-x-1/2 w-[600px] h-[600px] bg-yellow-500/10 rounded-full blur-[120px] animate-pulse pointer-events-none"></div>
+        {/* Background Elements */}
+        <div className="fixed top-[-20%] left-1/2 transform -translate-x-1/2 w-[600px] h-[600px] bg-yellow-500/10 rounded-full blur-[120px] animate-pulse pointer-events-none -z-10"></div>
 
         {/* Main Card */}
-        <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-8 md:p-12 rounded-[2rem] shadow-2xl w-full max-w-lg relative z-10 animate-float">
+        <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-8 md:p-12 rounded-[2rem] shadow-2xl w-full max-w-lg relative z-20 animate-float">
             
             <button onClick={() => navigate('/select-role')} className="absolute top-6 left-6 text-soulis-300 hover:text-white transition flex items-center gap-1">
                 <ChevronLeft size={20}/> กลับหน้าหลัก
