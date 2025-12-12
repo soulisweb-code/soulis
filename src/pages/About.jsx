@@ -5,7 +5,7 @@ export default function About() {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-6 relative overflow-hidden">
+    <div className="h-full w-full overflow-y-auto overflow-x-hidden font-sans relative">
       {/* Background Elements */}
       <div className="absolute top-[-10%] left-1/2 transform -translate-x-1/2 w-[800px] h-[500px] bg-soulis-600/20 rounded-full blur-[120px]"></div>
 
