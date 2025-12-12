@@ -21,17 +21,43 @@ export default function Chat() {
   const [showRating, setShowRating] = useState(false);
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState('');
-  const messagesEndRef = useRef(null);
+  
+  // 🔥 State ใหม่สำหรับคุมความสูงหน้าจอ
+  const [viewportHeight, setViewportHeight] = useState('100%');
 
+  const messagesEndRef = useRef(null);
   const isFinished = useRef(false);
   const intervalRef = useRef(null);
   const channelRef = useRef(null);
 
+  // 🔥 Hook จัดการความสูงหน้าจอเมื่อคีย์บอร์ดเด้ง
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.visualViewport) {
+        // ตั้งความสูงเท่ากับพื้นที่ที่มองเห็นจริง (หักคีย์บอร์ดออกแล้ว)
+        setViewportHeight(`${window.visualViewport.height}px`);
+        
+        // สั่งให้เลื่อนลงล่างสุดทันที
+        setTimeout(() => {
+            messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
+        }, 100);
+      }
+    };
+
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', handleResize);
+      handleResize(); // เรียกครั้งแรกเลย
+    }
+
+    return () => {
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener('resize', handleResize);
+      }
+    };
+  }, []);
+
   const scrollToBottom = () => { 
-    // ดีเลย์นิดนึงเพื่อให้คีย์บอร์ดดันขึ้นมาก่อนแล้วค่อยเลื่อน
-    setTimeout(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    }, 100);
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
   const killSystem = () => {
@@ -122,7 +148,6 @@ export default function Chat() {
     setMessages(prev => [...prev, { id: Date.now(), sender_id: userId, content, created_at: new Date().toISOString() }]);
     await supabase.from('messages').insert([{ match_id: matchId, sender_id: userId, content }]);
     fetchMessages();
-    // สั่ง scroll อีกรอบหลังส่ง
     setTimeout(scrollToBottom, 50);
   };
 
@@ -147,9 +172,8 @@ export default function Chat() {
     navigate('/thank-you-talker', { replace: true });
   };
 
-  // ... (ส่วน Modal เหมือนเดิม ไม่ต้องแก้) ...
   if (showReportModal) return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" style={{ height: viewportHeight }}>
         <div className="bg-soulis-800 border border-soulis-600 p-6 rounded-2xl w-full max-w-sm animate-float">
           <div className="flex justify-between items-center mb-4 border-b border-white/10 pb-4">
             <h3 className="text-xl font-bold text-white flex items-center gap-2"><Flag className="text-red-500" /> รายงานผู้ใช้</h3>
@@ -181,12 +205,14 @@ export default function Chat() {
       </div>
   );
 
-  // 🔥🔥🔥 ส่วนสำคัญ: แก้ไข Layout ให้รองรับคีย์บอร์ดมือถือ 🔥🔥🔥
   return (
-    // เปลี่ยน h-screen เป็น h-[100dvh] (Dynamic Height)
-    <div className="flex flex-col h-[100dvh] bg-soulis-900 relative overflow-hidden">
+    // 🔥 บังคับความสูงด้วย Style Inline จาก Javascript (แก้ปัญหาคีย์บอร์ดบัง)
+    <div 
+        className="flex flex-col bg-soulis-900 relative overflow-hidden w-full"
+        style={{ height: viewportHeight }} 
+    >
       
-      {/* Header (Fixed Height) */}
+      {/* Header */}
       <header className="bg-soulis-900/80 backdrop-blur-md p-4 shadow flex justify-between items-center z-10 border-b border-white/5 flex-none">
         <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-gradient-to-br from-soulis-500 to-soulis-700 rounded-full flex items-center justify-center shadow-md"><User className="text-white w-5 h-5" /></div>
@@ -201,14 +227,14 @@ export default function Chat() {
         </div>
       </header>
 
-      {/* Chat Area (Flexible Height) */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar min-h-0">
+      {/* Chat Area */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
         {messages.map((msg, index) => {
             const isMe = msg.sender_id === userId;
             const isSeq = index > 0 && messages[index - 1].sender_id === msg.sender_id;
             return (
               <div key={msg.id} className={`flex w-full ${isMe ? 'justify-end' : 'justify-start'} ${isSeq ? 'mt-1' : 'mt-4'}`}>
-                  <div className={`px-5 py-3 text-sm md:text-base leading-relaxed shadow-sm break-words max-w-[80%] ${
+                  <div className={`px-5 py-3 text-sm md:text-base leading-relaxed shadow-sm break-words max-w-[85%] ${
                     isMe ? 'bg-gradient-to-r from-soulis-600 to-soulis-500 text-white rounded-2xl rounded-tr-sm' 
                          : 'bg-white/10 backdrop-blur-sm text-gray-100 border border-white/10 rounded-2xl rounded-tl-sm'
                   }`}>
@@ -220,22 +246,22 @@ export default function Chat() {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input (Fixed at bottom but inside Flex flow) */}
-      <form onSubmit={sendMessage} className="p-4 bg-soulis-900/90 backdrop-blur-md flex gap-3 border-t border-white/5 flex-none safe-area-bottom">
+      {/* Input */}
+      <form onSubmit={sendMessage} className="p-3 bg-soulis-900/95 backdrop-blur-md flex gap-2 border-t border-white/5 flex-none safe-area-bottom">
         <input 
             type="text" 
             value={newMessage} 
             onChange={(e) => setNewMessage(e.target.value)} 
-            onFocus={scrollToBottom} // แตะปุ๊บ เลื่อนจอให้
-            className="flex-1 bg-white/5 text-white placeholder-gray-400 border border-white/10 rounded-full px-6 py-3 focus:outline-none focus:bg-white/10 focus:border-soulis-500 transition" 
+            onFocus={() => setTimeout(scrollToBottom, 300)}
+            className="flex-1 bg-white/5 text-white placeholder-gray-400 border border-white/10 rounded-full px-5 py-3 focus:outline-none focus:bg-white/10 focus:border-soulis-500 transition text-sm md:text-base" 
             placeholder="พิมพ์ข้อความ..." 
         />
         <button type="submit" disabled={!newMessage.trim()} className="bg-soulis-500 hover:bg-soulis-400 text-white p-3 rounded-full transition shadow-lg shadow-soulis-500/30 disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"><Send size={20}/></button>
       </form>
 
-      {/* Confirm Modal (เหมือนเดิม) */}
+      {/* Confirm Modal */}
       {showConfirmEnd && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" style={{ height: viewportHeight }}>
             <div className="bg-soulis-800 border border-soulis-600 p-6 rounded-2xl w-full max-w-sm text-center animate-float">
                 <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-4" />
                 <h3 className="text-xl font-bold text-white mb-4">ต้องการจบสนทนา?</h3>
