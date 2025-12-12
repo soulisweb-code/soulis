@@ -18,7 +18,7 @@ export default function Support() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-6 relative overflow-hidden bg-soulis-900">
+    <div className="h-full w-full overflow-y-auto overflow-x-hidden font-sans relative bg-soulis-900">
       {/* Background Elements */}
       <div className="absolute top-[-20%] left-1/2 transform -translate-x-1/2 w-[600px] h-[600px] bg-yellow-500/10 rounded-full blur-[120px] animate-pulse"></div>
 
