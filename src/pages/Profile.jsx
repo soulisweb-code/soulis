@@ -43,7 +43,7 @@ export default function Profile() {
   if (loading) return <div className="min-h-screen flex items-center justify-center text-white">กำลังโหลดข้อมูล...</div>;
 
   return (
-    <div className="min-h-screen p-4 md:p-8 relative overflow-hidden flex justify-center items-start">
+    <div className="min-h-full flex flex-col items-center justify-center p-6 pt-24 pb-32">
        <div className="w-full max-w-2xl relative z-10 space-y-6">
         <button onClick={() => navigate('/select-role')} className="text-soulis-300 hover:text-white flex items-center gap-2 mb-4 transition"><ChevronLeft /> กลับหน้าหลัก</button>
 
