@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/(.*)",
-      "destination": "/RoleSelection.jsx"
+      "destination": "/RoleSelection.html"
     }
   ]
 }
