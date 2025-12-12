@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = 'https://iocwqgmbbuzckbvcgdmf.supabase.co'
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlvY3dxZ21iYnV6Y2tidmNnZG1mIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQwNjU4NzcsImV4cCI6MjA3OTY0MTg3N30.n7AyYhU6l462aGp6wHPVzSW7pE5Ys5irMtmgzh6O7as'
+// Vite ต้องเรียกใช้ตัวแปรด้วยคำสั่ง import.meta.env และต้องมี VITE_ นำหน้า
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
 export const supabase = createClient(supabaseUrl, supabaseKey)
