@@ -10,13 +10,13 @@
   to { transform: translateY(-2000px); }
 }
 
-html, body, #root {
+/* html, body, #root {
   height: 100%;
   width: 100%;
   position: fixed;
   overflow: hidden;
   overscroll-behavior: none;
-}
+} */
 
 
 /* =========================================
@@ -32,7 +32,6 @@ body {
   /* ซ่อน scrollbar แนวนอน กันดาวล้น */
   overflow-x: hidden; /* ห้ามเลื่อนซ้ายขวา */
   overflow-y: auto;   /* ให้เลื่อนขึ้นลงได้ตามปกติ */
-  overscroll-behavior: none;
 
   /* พื้นหลังสีม่วงไล่เฉดเข้มๆ ดูลึกลับ */
   background: radial-gradient(ellipse at bottom, #2a0845 0%, #0c0214 100%);
