@@ -36,7 +36,7 @@ export default function RoleSelection() {
   };
 
   return (
-    <div className="min-h-screen relative p-6 py-20 flex flex-col items-center justify-center font-sans overflow-x-hidden overflow-y-auto">
+    <div className="h-full w-full overflow-y-auto overflow-x-hidden font-sans relative">
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-soulis-800 via-soulis-900 to-black opacity-80"></div>
       
       <div className="absolute top-6 right-6 z-20">

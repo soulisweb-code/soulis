@@ -92,7 +92,7 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 py-10 relative overflow-x-hidden overflow-y-auto bg-soulis-900 font-sans">
+    <div className="h-full w-full overflow-y-auto overflow-x-hidden bg-soulis-900 font-sans relative">
       <div className="absolute top-[-10%] left-[-10%] w-[600px] h-[600px] bg-soulis-500/20 rounded-full blur-[120px] animate-float-slow"></div>
       <div className="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] bg-soulis-accent/10 rounded-full blur-[120px] animate-float-slow delay-1000"></div>
 
