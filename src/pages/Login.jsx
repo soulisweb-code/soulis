@@ -31,7 +31,7 @@ export default function Login() {
   };
 
   return (
-    // 🔥 Layout: ใช้โครงสร้างเดิมที่แก้เรื่อง Scroll แล้ว (h-full + overflow-y-auto)
+    // 🔥 Layout Fix: ใช้ h-full + overflow-y-auto เพื่อให้เลื่อนได้ในมือถือ
     <div className="h-full w-full overflow-y-auto overflow-x-hidden bg-soulis-900 font-sans relative">
       
       {/* Container กลางจอ */}
@@ -64,7 +64,7 @@ export default function Login() {
              </span>
           </div>
 
-          {/* 🔥 Google Button (ปุ่มเดียวจบ) */}
+          {/* 🔥 Google Button */}
           <button 
             onClick={handleStartLogin}
             disabled={loading}
@@ -81,10 +81,22 @@ export default function Login() {
             )}
           </button>
 
-          {/* Footer Text */}
+          {/* Footer Text (ลิงก์กดได้แล้ว!) */}
           <p className="text-xs text-gray-500 mt-2">
             การเข้าสู่ระบบถือว่าท่านยอมรับ <br/> 
-            <span className="text-soulis-400 underline cursor-pointer hover:text-white transition">ข้อตกลงการใช้งาน</span> และ <span className="text-soulis-400 underline cursor-pointer hover:text-white transition">นโยบายความเป็นส่วนตัว</span>
+            <span 
+                onClick={handleStartLogin} 
+                className="text-soulis-400 underline cursor-pointer hover:text-white transition"
+            >
+                ข้อตกลงการใช้งาน
+            </span> 
+            {' '}และ{' '} 
+            <span 
+                onClick={handleStartLogin} 
+                className="text-soulis-400 underline cursor-pointer hover:text-white transition"
+            >
+                นโยบายความเป็นส่วนตัว
+            </span>
           </p>
 
         </div>
