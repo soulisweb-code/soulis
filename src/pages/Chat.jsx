@@ -18,16 +18,49 @@ export default function Chat() {
   const [showConfirmEnd, setShowConfirmEnd] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false); 
   const [reportReason, setReportReason] = useState('');
+  
+  // 🔥 State ใหม่: สำหรับเก็บข้อความ "อื่นๆ"
+  const [otherReasonText, setOtherReasonText] = useState('');
+
   const [showRating, setShowRating] = useState(false);
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState('');
   
+  // State คุมความสูงจอ (แก้เรื่องคีย์บอร์ด)
+  const [viewportHeight, setViewportHeight] = useState(window.innerHeight);
+
   const messagesEndRef = useRef(null);
   const isFinished = useRef(false);
   const intervalRef = useRef(null);
   const channelRef = useRef(null);
 
-  // สั่ง Scroll ลงล่างสุด
+  // Layout Fix: Visual Viewport
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.visualViewport) {
+        setViewportHeight(window.visualViewport.height);
+        setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'auto' }), 0);
+      } else {
+        setViewportHeight(window.innerHeight);
+      }
+    };
+
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', handleResize);
+      handleResize();
+    } else {
+      window.addEventListener('resize', handleResize);
+    }
+
+    return () => {
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener('resize', handleResize);
+      } else {
+        window.removeEventListener('resize', handleResize);
+      }
+    };
+  }, []);
+
   const scrollToBottom = () => { 
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
@@ -87,7 +120,6 @@ export default function Chat() {
       }
 
       await fetchMessages();
-      // รอแป๊บนึงให้ DOM วาดเสร็จแล้วค่อยเลื่อนลง
       setTimeout(scrollToBottom, 100);
 
       channelRef.current = supabase.channel(`room-${matchId}`)
@@ -132,8 +164,24 @@ export default function Chat() {
 
   const handleSubmitReport = async () => {
     if (!reportReason) return alert("กรุณาเลือกเหตุผล");
+    
+    // 🔥 เตรียมข้อมูลเหตุผล
+    let finalReason = reportReason;
+    if (reportReason === 'อื่นๆ') {
+        if (!otherReasonText.trim()) return alert("กรุณาระบุรายละเอียดเพิ่มเติมสำหรับ 'อื่นๆ'");
+        finalReason = `อื่นๆ: ${otherReasonText}`; // รวมข้อความเข้าไป
+    }
+
     if (!confirm("ยืนยันการรายงาน?")) return;
-    const { error } = await supabase.from('reports').insert({ reporter_id: userId, reported_id: partnerId, reason: reportReason, chat_evidence: messages, status: 'pending' });
+    
+    const { error } = await supabase.from('reports').insert({ 
+        reporter_id: userId, 
+        reported_id: partnerId, 
+        reason: finalReason, // ส่งค่าที่รวมแล้วไป
+        chat_evidence: messages, 
+        status: 'pending' 
+    });
+    
     if (error) return alert("Error: " + error.message);
     alert("ได้รับรายงานแล้ว");
     confirmEndChat(); 
@@ -145,27 +193,43 @@ export default function Chat() {
     navigate('/thank-you-talker', { replace: true });
   };
 
-  // ... (ส่วน Modal รายงาน คงเดิม) ...
+  // 🔥 Modal Report ปรับปรุงใหม่
   if (showReportModal) return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-        <div className="bg-soulis-800 border border-soulis-600 p-6 rounded-2xl w-full max-w-sm animate-float">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" style={{ height: `${viewportHeight}px` }}>
+        <div className="bg-soulis-800 border border-soulis-600 p-6 rounded-2xl w-full max-w-sm animate-float flex flex-col max-h-[90%]">
           <div className="flex justify-between items-center mb-4 border-b border-white/10 pb-4">
             <h3 className="text-xl font-bold text-white flex items-center gap-2"><Flag className="text-red-500" /> รายงานผู้ใช้</h3>
             <button onClick={() => setShowReportModal(false)} className="text-gray-400 hover:text-white"><X /></button>
           </div>
-          <div className="space-y-2 mb-6">
+          
+          <div className="space-y-2 mb-4 overflow-y-auto custom-scrollbar flex-1">
             {['ใช้ถ้อยคำหยาบคาย', 'คุกคามทางเพศ', 'หลอกลวง', 'ก่อกวน', 'อื่นๆ'].map((r) => (
               <button key={r} onClick={() => setReportReason(r)} className={`w-full text-left px-4 py-2.5 rounded-lg text-sm transition ${reportReason === r ? 'bg-red-600 text-white' : 'bg-white/5 text-gray-300 hover:bg-white/10'}`}>{r}</button>
             ))}
+
+            {/* 🔥 ช่องพิมพ์จะโผล่มาเมื่อเลือก "อื่นๆ" */}
+            {reportReason === 'อื่นๆ' && (
+                <div className="pt-2 animate-fade-in">
+                    <label className="text-xs text-red-300 mb-1 block">* โปรดระบุรายละเอียด:</label>
+                    <textarea 
+                        className="w-full bg-black/30 border border-red-500/50 rounded-lg p-3 text-white text-sm focus:border-red-400 outline-none resize-none"
+                        rows="3"
+                        placeholder="เช่น พยายามขายของ, ขอข้อมูลส่วนตัว..."
+                        value={otherReasonText}
+                        onChange={(e) => setOtherReasonText(e.target.value)}
+                    />
+                </div>
+            )}
           </div>
-          <button onClick={handleSubmitReport} disabled={!reportReason} className="w-full bg-red-600 hover:bg-red-700 disabled:bg-gray-600 text-white py-2 rounded-lg font-bold transition">ส่งรายงาน</button>
+
+          <button onClick={handleSubmitReport} disabled={!reportReason} className="w-full bg-red-600 hover:bg-red-700 disabled:bg-gray-600 text-white py-3 rounded-lg font-bold transition shadow-lg mt-auto">ส่งรายงาน</button>
         </div>
       </div>
   );
 
-  // ... (ส่วน Modal ให้คะแนน คงเดิม) ...
+  // ... (ส่วน Modal Review คงเดิม) ...
   if (showRating) return (
-      <div className="min-h-screen flex items-center justify-center bg-soulis-900 p-4 relative z-50">
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-soulis-900 p-4" style={{ height: `${viewportHeight}px` }}>
         <div className="bg-white/10 backdrop-blur-xl border border-white/20 p-8 rounded-3xl shadow-2xl w-full max-w-md text-center animate-float">
           <h2 className="text-2xl font-bold text-white mb-4">จบการสนทนาแล้ว</h2>
           <div className="flex justify-center gap-2 mb-6">
@@ -181,13 +245,13 @@ export default function Chat() {
   );
 
   return (
-    // 🔥 ใช้ 100svh (Small Viewport) เพื่อให้ขนาดจอคงที่ ไม่เด้งตาม Address bar
-    <div className="bg-soulis-900 h-[100svh] w-full relative">
+    <div 
+        className="fixed inset-0 w-full bg-soulis-900 flex flex-col overflow-hidden"
+        style={{ height: `${viewportHeight}px` }} 
+    >
       
-      {/* 🔥 HEADER: Fixed Top 
-         ตอกหมุดไว้ด้านบนสุด สูง 4rem (h-16)
-      */}
-      <header className="fixed top-0 left-0 right-0 h-16 z-50 bg-soulis-900/90 backdrop-blur-md px-4 shadow-md flex justify-between items-center border-b border-white/5">
+      {/* Header */}
+      <header className="flex-none h-16 bg-soulis-900/80 backdrop-blur-md px-4 shadow flex justify-between items-center z-10 border-b border-white/5">
         <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-gradient-to-br from-soulis-500 to-soulis-700 rounded-full flex items-center justify-center shadow-md"><User className="text-white w-5 h-5" /></div>
             <div>
@@ -201,13 +265,8 @@ export default function Chat() {
         </div>
       </header>
 
-      {/* 🔥 CHAT AREA: 
-         - ใช้ h-full เพื่อให้เต็มจอ
-         - เพิ่ม padding-top (pt-16) หลบ Header
-         - เพิ่ม padding-bottom (pb-24) หลบ Input Bar
-         - overflow-y-auto ให้เลื่อนเฉพาะตรงกลาง
-      */}
-      <div className="h-full overflow-y-auto pt-16 pb-24 px-4 space-y-3 custom-scrollbar">
+      {/* Chat Area */}
+      <div className="flex-1 overflow-y-auto px-4 py-2 space-y-3 custom-scrollbar">
         {messages.map((msg, index) => {
             const isMe = msg.sender_id === userId;
             const isSeq = index > 0 && messages[index - 1].sender_id === msg.sender_id;
@@ -225,10 +284,8 @@ export default function Chat() {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* 🔥 INPUT BAR: Fixed Bottom
-         ตอกหมุดไว้ล่างสุดเสมอ (จะถูกคีย์บอร์ดดันขึ้นอัตโนมัติด้วยคำสั่งใน index.html)
-      */}
-      <form onSubmit={sendMessage} className="fixed bottom-0 left-0 right-0 z-50 p-3 bg-soulis-900/95 backdrop-blur-xl border-t border-white/5 flex gap-2 safe-area-bottom">
+      {/* Input Bar */}
+      <form onSubmit={sendMessage} className="flex-none p-3 bg-soulis-900/95 backdrop-blur-xl border-t border-white/5 flex gap-2">
         <input 
             type="text" 
             value={newMessage} 
@@ -239,9 +296,9 @@ export default function Chat() {
         <button type="submit" disabled={!newMessage.trim()} className="bg-soulis-500 hover:bg-soulis-400 text-white p-3 rounded-full transition shadow-lg shadow-soulis-500/30 disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"><Send size={20}/></button>
       </form>
 
-      {/* Confirm Modal (เหมือนเดิม) */}
+      {/* Confirm Modal */}
       {showConfirmEnd && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" style={{ height: `${viewportHeight}px` }}>
             <div className="bg-soulis-800 border border-soulis-600 p-6 rounded-2xl w-full max-w-sm text-center animate-float">
                 <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-4" />
                 <h3 className="text-xl font-bold text-white mb-4">ต้องการจบสนทนา?</h3>
