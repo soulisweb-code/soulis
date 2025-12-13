@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
-import { User, LogOut, ChevronLeft, Mail, Calendar, Shield, Edit3, Save, X, Key, Star, MessageSquare, LayoutDashboard } from 'lucide-react';
+import { User, LogOut, ChevronLeft, Mail, Calendar, Shield, Edit3, Save, X, Star, MessageSquare, LayoutDashboard } from 'lucide-react';
 
 export default function Profile() {
   const navigate = useNavigate();
@@ -11,9 +11,6 @@ export default function Profile() {
   const [email, setEmail] = useState('');
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
-  
-  // State เช็คว่าเป็น User แบบ Email หรือไม่
-  const [isEmailUser, setIsEmailUser] = useState(false);
   
   // UI States
   const [isEditingName, setIsEditingName] = useState(false);
@@ -29,10 +26,6 @@ export default function Profile() {
     if (!user) { navigate('/'); return; }
     
     setEmail(user.email);
-
-    if (user.app_metadata.provider === 'email') {
-        setIsEmailUser(true);
-    }
 
     const { data: profileData } = await supabase.from('profiles').select('*').eq('id', user.id).single();
     setProfile(profileData);
@@ -52,15 +45,6 @@ export default function Profile() {
       setProfile({ ...profile, username: newName });
       setIsEditingName(false);
     }
-  };
-
-  const handleChangePassword = async () => {
-    if (!confirm("ระบบจะส่งลิงก์เปลี่ยนรหัสผ่านไปที่อีเมลของคุณ ยืนยัน?")) return;
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: window.location.origin + '/update-password',
-    });
-    if (error) alert("Error: " + error.message);
-    else alert(`📧 ส่งลิงก์เปลี่ยนรหัสไปที่ ${email} แล้วครับ!`);
   };
 
   const handleLogout = async () => {
@@ -112,7 +96,7 @@ export default function Profile() {
             {profile?.role === 'admin' ? '👑 Administrator' : '✨ Soulis Member'}
         </p>
 
-        {/* 🔥 ปุ่มพิเศษสำหรับ Admin: วาร์ปไป Dashboard */}
+        {/* ปุ่มพิเศษสำหรับ Admin */}
         {profile?.role === 'admin' && (
             <button 
                 onClick={() => navigate('/admin-dashboard')} 
@@ -149,16 +133,6 @@ export default function Profile() {
                 </div>
                 <ChevronLeft size={20} className="rotate-180 text-gray-500 group-hover:text-white transition" />
             </button>
-
-            {isEmailUser && (
-                <button onClick={handleChangePassword} className="w-full bg-white/5 p-4 rounded-2xl border border-white/10 flex items-center gap-4 hover:bg-white/10 transition text-left group">
-                    <div className="bg-orange-500/20 p-3 rounded-full text-orange-300 group-hover:scale-110 transition"><Key size={20}/></div>
-                    <div className="flex-1">
-                        <p className="text-xs text-gray-400 uppercase">ความปลอดภัย</p>
-                        <p className="text-white">เปลี่ยนรหัสผ่าน</p>
-                    </div>
-                </button>
-            )}
 
         </div>
 
