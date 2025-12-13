@@ -1,12 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
-import { LogOut, Trash2, AlertTriangle, Eye, Ban, CheckCircle, X, Users, Edit3, Save, Search, Heart } from 'lucide-react'; // 🔥 เพิ่ม Heart
+import { LogOut, Trash2, AlertTriangle, Eye, Ban, CheckCircle, X, Users, Edit3, Save, Search, Heart } from 'lucide-react';
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
   
-  // ... (ส่วน state และ logic เหมือนเดิมทุกอย่าง) ...
   const [activeTab, setActiveTab] = useState('reports');
   const [loading, setLoading] = useState(true);
   
@@ -19,7 +18,6 @@ export default function AdminDashboard() {
   const [searchTerm, setSearchTerm] = useState(''); 
   const [editFormData, setEditFormData] = useState({ username: '', role: 'user' });
 
-  // ... (useEffect checkAdmin เหมือนเดิม) ...
   useEffect(() => {
     const checkAdmin = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -38,8 +36,6 @@ export default function AdminDashboard() {
     checkAdmin();
   }, []);
 
-  // ... (Functions fetchData, handleBan, handleDelete เหมือนเดิม) ...
-  // (ก๊อปไส้ในฟังก์ชันเดิมมาใส่ได้เลยครับ)
   const fetchData = async () => {
     try {
         const { data: reportsData } = await supabase.from('reports').select('*').order('created_at', { ascending: false });
@@ -73,6 +69,17 @@ export default function AdminDashboard() {
     await supabase.from('reports').update({ status: 'dismissed' }).eq('id', reportId);
     fetchData();
     setSelectedReport(null);
+  };
+
+  // 🔥 ฟังก์ชันลบ Report (เพิ่มใหม่)
+  const handleDeleteReport = async (reportId) => {
+    if (!window.confirm("⚠️ ต้องการลบรายงานนี้ทิ้งถาวรใช่หรือไม่?")) return;
+    const { error } = await supabase.from('reports').delete().eq('id', reportId);
+    if (error) alert("Error: " + error.message);
+    else {
+        fetchData();
+        setSelectedReport(null); // ปิด Modal ถ้าเปิดอยู่
+    }
   };
 
   const handleCleanSystem = async () => {
@@ -146,7 +153,6 @@ export default function AdminDashboard() {
         </div>
 
         <div className="space-y-2">
-            {/* 🔥 ปุ่มวาร์ปกลับไปเป็นคนธรรมดา */}
             <button onClick={() => navigate('/select-role')} className="w-full flex items-center gap-2 text-yellow-300 hover:text-yellow-200 transition px-3 py-2 rounded-lg hover:bg-white/5 bg-yellow-500/10 border border-yellow-500/20">
                 <Heart size={18}/> พักใจ (เลือกบทบาท)
             </button>
@@ -157,7 +163,6 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      {/* Main Content (เหมือนเดิมเป๊ะๆ) */}
       <div className="flex-1 p-8 overflow-y-auto relative z-10">
         
         {/* --- Tab: Reports --- */}
@@ -172,7 +177,7 @@ export default function AdminDashboard() {
                                 <th className="p-4">คู่กรณี</th>
                                 <th className="p-4">ข้อหา</th>
                                 <th className="p-4">สถานะ</th>
-                                <th className="p-4">จัดการ</th>
+                                <th className="p-4 text-right">จัดการ</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-white/5 text-sm">
@@ -182,7 +187,17 @@ export default function AdminDashboard() {
                                     <td className="p-4"><div className="flex flex-col"><span className="text-blue-400">ผู้แจ้ง: {report.reporter.username}</span><span className="text-red-400">ผู้ถูกแจ้ง: {report.reported.username} {report.reported.is_banned && '(BANNED)'}</span></div></td>
                                     <td className="p-4 text-gray-300">{report.reason}</td>
                                     <td className="p-4"><span className={`px-2 py-1 rounded-md text-xs font-bold border ${report.status === 'pending' ? 'bg-yellow-500/10 text-yellow-300 border-yellow-500/30' : report.status === 'banned' ? 'bg-red-500/10 text-red-300 border-red-500/30' : 'bg-green-500/10 text-green-300 border-green-500/30'}`}>{report.status.toUpperCase()}</span></td>
-                                    <td className="p-4"><button onClick={() => setSelectedReport(report)} className="bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg flex items-center gap-1 transition"><Eye size={14}/> ตรวจสอบ</button></td>
+                                    <td className="p-4 text-right">
+                                        <div className="flex items-center justify-end gap-2">
+                                            <button onClick={() => setSelectedReport(report)} className="bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg flex items-center gap-1 transition">
+                                                <Eye size={14}/> ตรวจสอบ
+                                            </button>
+                                            {/* 🔥 ปุ่มลบ Report */}
+                                            <button onClick={() => handleDeleteReport(report.id)} className="bg-red-500/10 hover:bg-red-500/30 text-red-400 p-1.5 rounded-lg transition" title="ลบรายงาน">
+                                                <Trash2 size={16}/>
+                                            </button>
+                                        </div>
+                                    </td>
                                 </tr>
                             ))}
                         </tbody>
@@ -192,7 +207,7 @@ export default function AdminDashboard() {
             </div>
         )}
 
-        {/* --- Tab: Users --- */}
+        {/* --- Tab: Users (เหมือนเดิม) --- */}
         {activeTab === 'users' && (
             <div className="animate-float">
                 <div className="flex justify-between items-center mb-6"><h2 className="text-3xl font-bold text-white">จัดการสมาชิก</h2><div className="relative"><Search className="absolute left-3 top-2.5 text-gray-400" size={18}/><input type="text" placeholder="ค้นหา..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="bg-white/5 border border-white/10 rounded-full py-2 pl-10 pr-4 text-white focus:outline-none focus:border-purple-500 transition w-64"/></div></div>
@@ -210,8 +225,6 @@ export default function AdminDashboard() {
                                     <td className="p-4 text-right flex justify-end gap-2">
                                         <button onClick={() => handleEditClick(user)} className="bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 p-2 rounded-lg transition" title="แก้ไข"><Edit3 size={16}/></button>
                                         <button onClick={() => handleToggleBan(user)} className={`p-2 rounded-lg transition ${user.is_banned ? 'bg-green-600/20 hover:bg-green-600/40 text-green-400' : 'bg-yellow-600/20 hover:bg-yellow-600/40 text-yellow-400'}`} title={user.is_banned ? "ปลดแบน" : "แบน"}><Ban size={16}/></button>
-                                        
-                                        {/* ปุ่มลบ */}
                                         {user.role !== 'admin' && (
                                             <button onClick={() => handleDeleteUser(user)} className="bg-red-600/20 hover:bg-red-600/40 text-red-400 p-2 rounded-lg transition" title="ลบถาวร">
                                                 <Trash2 size={16}/>
@@ -246,7 +259,12 @@ export default function AdminDashboard() {
                 <div className="flex-1 overflow-y-auto p-6 bg-black/40 space-y-3 custom-scrollbar">
                     {selectedReport.chat_evidence?.map((msg, i) => (<div key={i} className={`p-2 rounded max-w-[80%] ${msg.sender_id === selectedReport.reporter_id ? 'ml-auto bg-blue-600 text-white' : 'bg-white/10 border border-white/10 text-gray-200'}`}>{msg.content}</div>))}
                 </div>
-                <div className="p-4 border-t border-white/10 bg-black/20 flex justify-end gap-3"><button onClick={() => handleDismiss(selectedReport.id)} className="px-4 py-2 text-gray-300 border border-white/10 rounded-lg">ยกฟ้อง</button><button onClick={() => handleBanFromReport(selectedReport.reported_id, selectedReport.id)} className="px-4 py-2 bg-red-600 text-white rounded-lg">แบนถาวร</button></div>
+                <div className="p-4 border-t border-white/10 bg-black/20 flex justify-end gap-3">
+                    <button onClick={() => handleDismiss(selectedReport.id)} className="px-4 py-2 text-gray-300 border border-white/10 rounded-lg">ยกฟ้อง</button>
+                    <button onClick={() => handleBanFromReport(selectedReport.reported_id, selectedReport.id)} className="px-4 py-2 bg-red-600 text-white rounded-lg">แบนถาวร</button>
+                    {/* 🔥 เพิ่มปุ่มลบใน Modal ด้วย */}
+                    <button onClick={() => handleDeleteReport(selectedReport.id)} className="px-4 py-2 bg-red-800 hover:bg-red-700 text-white rounded-lg flex items-center gap-2"><Trash2 size={16}/> ลบรายงาน</button>
+                </div>
             </div>
         </div>
       )}
