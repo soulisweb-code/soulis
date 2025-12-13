@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
-import { User, LogOut, ChevronLeft, Mail, Calendar, Shield, Edit3, Save, X, Key, Star, MessageSquare } from 'lucide-react';
+import { User, LogOut, ChevronLeft, Mail, Calendar, Shield, Edit3, Save, X, Key, Star, MessageSquare, LayoutDashboard } from 'lucide-react';
 
 export default function Profile() {
   const navigate = useNavigate();
@@ -12,7 +12,7 @@ export default function Profile() {
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   
-  // 🔥 State เช็คว่าเป็น User แบบ Email หรือไม่
+  // State เช็คว่าเป็น User แบบ Email หรือไม่
   const [isEmailUser, setIsEmailUser] = useState(false);
   
   // UI States
@@ -30,18 +30,14 @@ export default function Profile() {
     
     setEmail(user.email);
 
-    // 🔥 เช็คว่า Login ด้วย Email หรือไม่ (ถ้าใช่ provider จะเป็น 'email')
-    // ถ้า Login ด้วย Google provider จะเป็น 'google'
     if (user.app_metadata.provider === 'email') {
         setIsEmailUser(true);
     }
 
-    // 1. ดึง Profile
     const { data: profileData } = await supabase.from('profiles').select('*').eq('id', user.id).single();
     setProfile(profileData);
     setNewName(profileData?.username || '');
 
-    // 2. ดึงรีวิวที่ได้รับ
     const { data: reviewsData } = await supabase.from('reviews').select('*').eq('target_user_id', user.id).order('created_at', { ascending: false });
     setReviews(reviewsData || []);
 
@@ -77,13 +73,11 @@ export default function Profile() {
   if (loading) return <div className="h-full w-full flex items-center justify-center text-white bg-soulis-900">Loading...</div>;
 
   return (
-    // 🔥 Layout Fix: ให้เลื่อนได้
     <div className="h-full w-full overflow-y-auto overflow-x-hidden font-sans relative bg-soulis-900">
       
       <div className="min-h-full flex flex-col items-center p-6 pt-24 pb-32">
         <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-soulis-800 via-soulis-900 to-black opacity-80 pointer-events-none -z-10"></div>
         
-        {/* Back Button */}
         <button onClick={() => navigate(-1)} className="absolute top-6 left-6 text-soulis-300 hover:text-white transition flex items-center gap-1 bg-white/5 px-3 py-2 rounded-full backdrop-blur-sm z-20">
             <ChevronLeft size={20}/> กลับ
         </button>
@@ -98,7 +92,7 @@ export default function Profile() {
             </div>
         </div>
 
-        {/* 📝 Username (แก้ไขได้) */}
+        {/* Username */}
         <div className="flex items-center gap-3 mb-2">
             {isEditingName ? (
                 <div className="flex items-center gap-2 bg-white/10 rounded-full px-2 py-1">
@@ -114,14 +108,23 @@ export default function Profile() {
             )}
         </div>
 
-        <p className="text-soulis-300 text-sm mb-8 bg-white/5 px-4 py-1 rounded-full border border-white/5">
+        <p className="text-soulis-300 text-sm mb-6 bg-white/5 px-4 py-1 rounded-full border border-white/5">
             {profile?.role === 'admin' ? '👑 Administrator' : '✨ Soulis Member'}
         </p>
+
+        {/* 🔥 ปุ่มพิเศษสำหรับ Admin: วาร์ปไป Dashboard */}
+        {profile?.role === 'admin' && (
+            <button 
+                onClick={() => navigate('/admin-dashboard')} 
+                className="mb-6 w-full max-w-md bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-3 rounded-2xl font-bold shadow-lg shadow-purple-500/30 flex items-center justify-center gap-2 hover:scale-105 transition-transform"
+            >
+                <LayoutDashboard size={20} /> ไปที่ Admin Dashboard
+            </button>
+        )}
 
         {/* Info Cards */}
         <div className="w-full max-w-md space-y-3">
             
-            {/* อีเมล */}
             <div className="bg-white/5 p-4 rounded-2xl border border-white/10 flex items-center gap-4">
                 <div className="bg-blue-500/20 p-3 rounded-full text-blue-300"><Mail size={20}/></div>
                 <div className="flex-1 overflow-hidden">
@@ -130,7 +133,6 @@ export default function Profile() {
                 </div>
             </div>
 
-            {/* วันที่สมัคร */}
             <div className="bg-white/5 p-4 rounded-2xl border border-white/10 flex items-center gap-4">
                 <div className="bg-purple-500/20 p-3 rounded-full text-purple-300"><Calendar size={20}/></div>
                 <div>
@@ -139,7 +141,6 @@ export default function Profile() {
                 </div>
             </div>
 
-            {/* ⭐ ปุ่มดูรีวิว */}
             <button onClick={() => setShowReviewsModal(true)} className="w-full bg-white/5 p-4 rounded-2xl border border-white/10 flex items-center gap-4 hover:bg-white/10 transition text-left group">
                 <div className="bg-yellow-500/20 p-3 rounded-full text-yellow-300 group-hover:scale-110 transition"><Star size={20}/></div>
                 <div className="flex-1">
@@ -149,7 +150,6 @@ export default function Profile() {
                 <ChevronLeft size={20} className="rotate-180 text-gray-500 group-hover:text-white transition" />
             </button>
 
-            {/* 🔐 ปุ่มเปลี่ยนรหัส (โชว์เฉพาะคนใช้ Email Login) */}
             {isEmailUser && (
                 <button onClick={handleChangePassword} className="w-full bg-white/5 p-4 rounded-2xl border border-white/10 flex items-center gap-4 hover:bg-white/10 transition text-left group">
                     <div className="bg-orange-500/20 p-3 rounded-full text-orange-300 group-hover:scale-110 transition"><Key size={20}/></div>
@@ -162,7 +162,6 @@ export default function Profile() {
 
         </div>
 
-        {/* Logout */}
         <button onClick={handleLogout} className="mt-10 w-full max-w-md bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition active:scale-95">
             <LogOut size={20} /> ออกจากระบบ
         </button>
@@ -170,7 +169,6 @@ export default function Profile() {
         <p className="mt-6 text-xs text-gray-600">User ID: {profile?.id}</p>
       </div>
 
-      {/* ⭐ Reviews Modal */}
       {showReviewsModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
             <div className="bg-soulis-800 border border-soulis-500/30 rounded-3xl w-full max-w-md h-[70vh] flex flex-col shadow-2xl relative overflow-hidden">

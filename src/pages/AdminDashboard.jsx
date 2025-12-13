@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
-import { LogOut, Trash2, AlertTriangle, Eye, Ban, CheckCircle, X, Users, Edit3, Save, Search } from 'lucide-react';
+import { LogOut, Trash2, AlertTriangle, Eye, Ban, CheckCircle, X, Users, Edit3, Save, Search, Heart } from 'lucide-react'; // 🔥 เพิ่ม Heart
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
   
+  // ... (ส่วน state และ logic เหมือนเดิมทุกอย่าง) ...
   const [activeTab, setActiveTab] = useState('reports');
   const [loading, setLoading] = useState(true);
   
@@ -18,6 +19,7 @@ export default function AdminDashboard() {
   const [searchTerm, setSearchTerm] = useState(''); 
   const [editFormData, setEditFormData] = useState({ username: '', role: 'user' });
 
+  // ... (useEffect checkAdmin เหมือนเดิม) ...
   useEffect(() => {
     const checkAdmin = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -36,6 +38,8 @@ export default function AdminDashboard() {
     checkAdmin();
   }, []);
 
+  // ... (Functions fetchData, handleBan, handleDelete เหมือนเดิม) ...
+  // (ก๊อปไส้ในฟังก์ชันเดิมมาใส่ได้เลยครับ)
   const fetchData = async () => {
     try {
         const { data: reportsData } = await supabase.from('reports').select('*').order('created_at', { ascending: false });
@@ -97,14 +101,13 @@ export default function AdminDashboard() {
     fetchData();
   };
 
-  // 🔥 ฟังก์ชันลบ User (ใช้ RPC ตัวใหม่ที่แก้ชื่อตัวแปรแล้ว)
   const handleDeleteUser = async (user) => {
     const confirmDelete = window.prompt(`พิมพ์ "delete" เพื่อยืนยันการลบผู้ใช้ ${user.username} (ลบถาวรทั้งบัญชีและข้อมูล)`);
     if (confirmDelete !== 'delete') return;
 
     try {
         const { error } = await supabase.rpc('delete_user_complete', { 
-            _uid: user.id  // ✅ ใช้ _uid เพื่อไม่ให้ซ้ำกับชื่อคอลัมน์
+            _target_uid: user.id 
         });
 
         if (error) throw error;
@@ -141,10 +144,20 @@ export default function AdminDashboard() {
                 <button onClick={() => setActiveTab('system')} className={`w-full text-left p-3 rounded-xl flex items-center gap-3 transition-all ${activeTab === 'system' ? 'bg-purple-600/80 text-white shadow-lg' : 'text-gray-400 hover:bg-white/10'}`}><Trash2 size={20}/> ระบบ</button>
             </nav>
         </div>
-        <button onClick={handleLogout} className="flex items-center gap-2 text-gray-400 hover:text-red-400 transition px-3 py-2 rounded-lg hover:bg-white/5"><LogOut size={18}/> ออกจากระบบ</button>
+
+        <div className="space-y-2">
+            {/* 🔥 ปุ่มวาร์ปกลับไปเป็นคนธรรมดา */}
+            <button onClick={() => navigate('/select-role')} className="w-full flex items-center gap-2 text-yellow-300 hover:text-yellow-200 transition px-3 py-2 rounded-lg hover:bg-white/5 bg-yellow-500/10 border border-yellow-500/20">
+                <Heart size={18}/> พักใจ (เลือกบทบาท)
+            </button>
+
+            <button onClick={handleLogout} className="w-full flex items-center gap-2 text-gray-400 hover:text-red-400 transition px-3 py-2 rounded-lg hover:bg-white/5">
+                <LogOut size={18}/> ออกจากระบบ
+            </button>
+        </div>
       </div>
 
-      {/* Main Content */}
+      {/* Main Content (เหมือนเดิมเป๊ะๆ) */}
       <div className="flex-1 p-8 overflow-y-auto relative z-10">
         
         {/* --- Tab: Reports --- */}
@@ -198,7 +211,7 @@ export default function AdminDashboard() {
                                         <button onClick={() => handleEditClick(user)} className="bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 p-2 rounded-lg transition" title="แก้ไข"><Edit3 size={16}/></button>
                                         <button onClick={() => handleToggleBan(user)} className={`p-2 rounded-lg transition ${user.is_banned ? 'bg-green-600/20 hover:bg-green-600/40 text-green-400' : 'bg-yellow-600/20 hover:bg-yellow-600/40 text-yellow-400'}`} title={user.is_banned ? "ปลดแบน" : "แบน"}><Ban size={16}/></button>
                                         
-                                        {/* 🔥 ปุ่มลบ User (เฉพาะ Admin ลบ User อื่น) */}
+                                        {/* ปุ่มลบ */}
                                         {user.role !== 'admin' && (
                                             <button onClick={() => handleDeleteUser(user)} className="bg-red-600/20 hover:bg-red-600/40 text-red-400 p-2 rounded-lg transition" title="ลบถาวร">
                                                 <Trash2 size={16}/>
