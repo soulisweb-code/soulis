@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { UserCircle } from 'lucide-react';
 import { supabase } from '../supabaseClient';
+import { Helmet } from 'react-helmet-async';
 
 export default function RoleSelection() {
   const navigate = useNavigate();
@@ -36,9 +37,15 @@ export default function RoleSelection() {
     // 🔥 แก้ไข Layout หลัก: ให้เลื่อนได้ และมีความสูงเต็มจอ
     <div className="h-full w-full overflow-y-auto overflow-x-hidden font-sans relative">
       
+      {/* ✅ ส่วน SEO: เปลี่ยนชื่อ Title ตามบริบทการใช้งาน */}
+      <Helmet>
+        <title>เลือกบทบาท - Soulis คุณอยากระบายหรือรับฟัง?</title>
+        <meta name="robots" content="noindex" /> {/* หน้านี้เป็นหน้าภายในที่ต้องล็อกอิน ไม่จำเป็นต้องให้ Google เก็บข้อมูล */}
+      </Helmet>
+
       {/* 🔥 จุดสำคัญที่แก้: 
-         - pt-24: เว้นขอบบนเยอะๆ ไม่ให้ข้อความไปชนปุ่ม Profile หรือขอบจอ
-         - pb-32: เว้นขอบล่างเยอะๆ ไม่ให้ปุ่ม Listener โดน Footer บัง
+          - pt-24: เว้นขอบบนเยอะๆ ไม่ให้ข้อความไปชนปุ่ม Profile หรือขอบจอ
+          - pb-32: เว้นขอบล่างเยอะๆ ไม่ให้ปุ่ม Listener โดน Footer บัง
       */}
       <div className="min-h-full flex flex-col items-center justify-center p-6 pt-24 pb-32">
 

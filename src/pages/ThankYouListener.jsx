@@ -1,11 +1,19 @@
 import { useNavigate } from 'react-router-dom';
 import { Heart, Home } from 'lucide-react';
+import { Helmet } from 'react-helmet-async';
 
 export default function ThankYouListener() {
   const navigate = useNavigate();
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
+      
+      {/* ✅ ส่วน SEO: เปลี่ยนชื่อแท็บเพื่อขอบคุณผู้ใช้ และซ่อนจาก Google Search */}
+      <Helmet>
+        <title>ขอบคุณที่รับฟัง - Soulis ฮีโร่ของใครบางคน</title>
+        <meta name="robots" content="noindex" />
+      </Helmet>
+
       <div className="absolute top-[-20%] left-[-20%] w-[500px] h-[500px] bg-emerald-500/20 rounded-full blur-[100px] animate-float"></div>
       
       <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-12 rounded-[2rem] shadow-2xl w-full max-w-lg text-center relative z-10 animate-float">

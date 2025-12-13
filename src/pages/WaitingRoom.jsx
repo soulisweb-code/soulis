@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 import { Search, Loader2 } from 'lucide-react';
+import { Helmet } from 'react-helmet-async';
 
 export default function WaitingRoom() {
   const location = useLocation();
@@ -136,6 +137,12 @@ export default function WaitingRoom() {
   return (
     <div className="h-full w-full fixed inset-0 bg-soulis-900 flex flex-col items-center justify-center p-4 text-white text-center font-sans overflow-hidden">
       
+      {/* ✅ ส่วน SEO: เปลี่ยนชื่อ Title ให้ผู้ใช้รู้สถานะ และสั่ง noindex */}
+      <Helmet>
+        <title>{status === 'กำลังเชื่อมต่อระบบ...' ? 'กำลังเชื่อมต่อ... - Soulis' : 'กำลังค้นหาเพื่อน... - Soulis'}</title>
+        <meta name="robots" content="noindex" />
+      </Helmet>
+
       {/* Background */}
       <div className="absolute top-[-20%] left-[-20%] w-[500px] h-[500px] bg-soulis-700/30 rounded-full blur-[100px] animate-float"></div>
       <div className="absolute bottom-[-20%] right-[-20%] w-[500px] h-[500px] bg-soulis-accent/20 rounded-full blur-[100px] animate-float delay-1000"></div>

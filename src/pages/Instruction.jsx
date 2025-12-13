@@ -1,5 +1,6 @@
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Shield, Heart, AlertCircle, CheckCircle, ArrowRight } from 'lucide-react';
+import { Helmet } from 'react-helmet-async';
 
 export default function Instruction() {
   const location = useLocation();
@@ -57,6 +58,22 @@ export default function Instruction() {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
+      
+      {/* ✅ ส่วน SEO: เพิ่ม Helmet สำหรับหน้าคู่มือการใช้งาน */}
+      <Helmet>
+        <title>คู่มือการใช้งาน - Soulis กติกาและมารยาท</title>
+        <meta 
+          name="description" 
+          content="อ่านกฎกติกาและมารยาทการใช้งาน Soulis สิ่งที่ควรทำและไม่ควรทำ เพื่อสร้างพื้นที่ปลอดภัยสำหรับทั้งผู้ระบายและผู้รับฟัง" 
+        />
+        <link rel="canonical" href="https://soulis.vercel.app/instruction" />
+        
+        {/* Social Media Tags */}
+        <meta property="og:title" content="คู่มือการใช้งาน - Soulis" />
+        <meta property="og:description" content="อ่านกฎกติกาและมารยาทการใช้งาน Soulis" />
+        <meta property="og:url" content="https://soulis.vercel.app/instruction" />
+      </Helmet>
+
       <div className="absolute top-[-20%] right-[-20%] w-[500px] h-[500px] bg-soulis-700/20 rounded-full blur-[100px] animate-float"></div>
       
       <div className="bg-white/5 backdrop-blur-xl border border-white/20 p-8 md:p-10 rounded-[2rem] shadow-2xl w-full max-w-2xl relative z-10 animate-float">

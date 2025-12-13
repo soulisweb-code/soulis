@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { supabase } from '../supabaseClient';
 import { Sparkles, X, Shield, ArrowRight } from 'lucide-react';
+import { Helmet } from 'react-helmet-async';
 
 export default function Login() {
   const [loading, setLoading] = useState(false);
@@ -34,6 +35,22 @@ export default function Login() {
     // 🔥 Layout Fix: ใช้ h-full + overflow-y-auto เพื่อให้เลื่อนได้ในมือถือ
     <div className="h-full w-full overflow-y-auto overflow-x-hidden bg-soulis-900 font-sans relative">
       
+      {/* ✅ ส่วน SEO: หน้าแรกสำคัญที่สุด! */}
+      <Helmet>
+        <title>Soulis - พื้นที่ปลอดภัยสำหรับใจคุณ (ไม่ระบุตัวตน)</title>
+        <meta 
+          name="description" 
+          content="เข้าสู่ระบบ Soulis เว็บไซต์ระบายความในใจและหาเพื่อนรับฟังแบบไม่ระบุตัวตน ปลอดภัย เป็นกันเอง และใช้งานฟรี" 
+        />
+        <link rel="canonical" href="https://soulis.vercel.app/" />
+        
+        {/* Open Graph สำหรับเวลาแชร์ลง Facebook/Line */}
+        <meta property="og:title" content="Soulis - พื้นที่ปลอดภัยสำหรับใจคุณ" />
+        <meta property="og:description" content="มาคุยกันนะ... ที่นี่มีคนพร้อมรับฟังคุณเสมอ 💜" />
+        <meta property="og:url" content="https://soulis.vercel.app/" />
+        <meta property="og:type" content="website" />
+      </Helmet>
+
       {/* Container กลางจอ */}
       <div className="min-h-full w-full flex items-center justify-center p-4 py-10">
 

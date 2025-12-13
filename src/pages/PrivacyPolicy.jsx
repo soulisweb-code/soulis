@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, Shield, Lock, FileText } from 'lucide-react';
+import { Helmet } from 'react-helmet-async';
 
 export default function PrivacyPolicy() {
   const navigate = useNavigate();
@@ -8,6 +9,21 @@ export default function PrivacyPolicy() {
     // 🔥 HERO FIX: fixed inset-0 + overflow-y-auto เพื่อให้เลื่อนได้ชัวร์
     <div className="fixed inset-0 z-10 bg-soulis-900 h-[100dvh] w-full overflow-y-auto overflow-x-hidden font-sans">
       
+      {/* ✅ ส่วน SEO: เพิ่ม Helmet สำหรับหน้านโยบายความเป็นส่วนตัว */}
+      <Helmet>
+        <title>นโยบายความเป็นส่วนตัว - Soulis ความปลอดภัยของคุณคือสิ่งสำคัญ</title>
+        <meta 
+          name="description" 
+          content="อ่านนโยบายความเป็นส่วนตัวของ Soulis ข้อมูลที่เราจัดเก็บ วิธีการใช้งานข้อมูล และมาตรฐานความปลอดภัย เพื่อความสบายใจในการใช้งานพื้นที่ระบายความในใจแห่งนี้" 
+        />
+        <link rel="canonical" href="https://soulis.vercel.app/privacy-policy" />
+        
+        {/* Social Media Tags */}
+        <meta property="og:title" content="นโยบายความเป็นส่วนตัว - Soulis" />
+        <meta property="og:description" content="เราให้ความสำคัญกับความเป็นส่วนตัวและความปลอดภัยของข้อมูลคุณ" />
+        <meta property="og:url" content="https://soulis.vercel.app/privacy-policy" />
+      </Helmet>
+
       {/* Wrapper: ใช้ min-h-full เพื่อยืดเนื้อหา และ pt/pb เพื่อกันขอบบนล่าง */}
       <div className="min-h-full w-full flex flex-col items-center justify-center p-6 pt-24 pb-32">
 

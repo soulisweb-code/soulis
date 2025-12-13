@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 import { LogOut, Trash2, AlertTriangle, Eye, Ban, CheckCircle, X, Users, Edit3, Save, Search, Heart } from 'lucide-react';
+import { Helmet } from 'react-helmet-async';
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
@@ -139,6 +140,13 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen font-sans text-white flex relative overflow-hidden bg-soulis-900">
+      
+      {/* ✅ ส่วน SEO: ป้องกัน Google เข้าถึงหน้า Admin */}
+      <Helmet>
+        <title>Admin Dashboard - Soulis Management System</title>
+        <meta name="robots" content="noindex" />
+      </Helmet>
+
       <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-soulis-700/20 rounded-full blur-[100px]"></div>
       
       {/* Sidebar */}

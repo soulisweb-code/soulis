@@ -1,12 +1,12 @@
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, Gift, Copy, HeartHandshake } from 'lucide-react';
 import { useState } from 'react';
+import { Helmet } from 'react-helmet-async';
 
 export default function Support() {
   const navigate = useNavigate();
   const [copied, setCopied] = useState(false);
 
-  // 🔴 ใส่เลขบัญชีของคุณตรงนี้
   const accountNo = "144-1-13505-6"; 
   const bankName = "ธนาคารกสิกรไทย (KBank)";
   const accountName = "อิทธิณัฐ รัตนโยธิน      ";
@@ -30,6 +30,21 @@ export default function Support() {
         }}
     >
       
+      {/* ✅ ส่วน SEO: เพิ่ม Helmet สำหรับหน้าสนับสนุน */}
+      <Helmet>
+        <title>สนับสนุนผู้พัฒนา - Soulis ร่วมส่งต่อกำลังใจ</title>
+        <meta 
+          name="description" 
+          content="ร่วมสนับสนุนทีมงานผู้พัฒนา Soulis เพื่อให้เราได้พัฒนาและดูแลรักษาพื้นที่ปลอดภัยสำหรับระบายความในใจแห่งนี้ต่อไป" 
+        />
+        <link rel="canonical" href="https://soulis.vercel.app/support" />
+        
+        {/* Social Media Tags */}
+        <meta property="og:title" content="สนับสนุนผู้พัฒนา - Soulis" />
+        <meta property="og:description" content="ร่วมเป็นส่วนหนึ่งในการขับเคลื่อนสังคมแห่งการรับฟัง" />
+        <meta property="og:url" content="https://soulis.vercel.app/support" />
+      </Helmet>
+
       {/* Wrapper ข้างใน: ใช้ min-h-full และ padding เยอะๆ */}
       <div className="min-h-full w-full flex flex-col items-center justify-center p-6 pt-24 pb-40">
 

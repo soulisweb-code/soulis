@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 import { User, LogOut, ChevronLeft, Mail, Calendar, Shield, Edit3, Save, X, Star, MessageSquare, LayoutDashboard } from 'lucide-react';
+import { Helmet } from 'react-helmet-async';
 
 export default function Profile() {
   const navigate = useNavigate();
@@ -59,6 +60,12 @@ export default function Profile() {
   return (
     <div className="h-full w-full overflow-y-auto overflow-x-hidden font-sans relative bg-soulis-900">
       
+      {/* ✅ ส่วน SEO: ตั้งชื่อหน้าและป้องกัน Google เก็บข้อมูลส่วนตัว */}
+      <Helmet>
+        <title>โปรไฟล์ของฉัน - Soulis</title>
+        <meta name="robots" content="noindex" />
+      </Helmet>
+
       <div className="min-h-full flex flex-col items-center p-6 pt-24 pb-32">
         <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-soulis-800 via-soulis-900 to-black opacity-80 pointer-events-none -z-10"></div>
         

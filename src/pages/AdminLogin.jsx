@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient'; 
 import { ShieldCheck, Lock, ArrowRight } from 'lucide-react';
+import { Helmet } from 'react-helmet-async';
 
 export default function AdminLogin() {
   const [email, setEmail] = useState('');
@@ -40,6 +41,13 @@ export default function AdminLogin() {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden bg-soulis-900 font-sans">
+      
+      {/* ✅ ส่วน SEO: ป้องกัน Google เข้าถึงหน้า Login แอดมิน */}
+      <Helmet>
+        <title>Admin Login - Soulis Restricted Area</title>
+        <meta name="robots" content="noindex" />
+      </Helmet>
+
       <div className="absolute top-[-10%] left-[-10%] w-[600px] h-[600px] bg-red-900/20 rounded-full blur-[120px] animate-pulse"></div>
       <div className="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] bg-purple-900/20 rounded-full blur-[120px] animate-float-slow delay-1000"></div>
       

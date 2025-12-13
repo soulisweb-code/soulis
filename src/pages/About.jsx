@@ -1,15 +1,28 @@
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, Heart, Sparkles, Users, Mail } from 'lucide-react';
+import { Helmet } from 'react-helmet-async';
 
 export default function About() {
   const navigate = useNavigate();
 
   return (
     // 🔥 HERO FIX: Layout สำหรับการเลื่อน
-    // 1. fixed inset-0 + z-10: ลอยทับหน้าจอหลัก
-    // 2. h-[100dvh]: ความสูงเต็มจอแบบ Dynamic
-    // 3. overflow-y-auto: สั่งให้เลื่อนได้
     <div className="fixed inset-0 z-10 bg-soulis-900 h-[100dvh] w-full overflow-y-auto overflow-x-hidden font-sans">
+      
+      {/* ✅ ส่วน SEO: เพิ่ม Helmet ตรงนี้ เพื่อบอก Google ว่าหน้านี้คือหน้า "เกี่ยวกับเรา" */}
+      <Helmet>
+        <title>เกี่ยวกับเรา - Soulis พื้นที่ปลอดภัยสำหรับใจคุณ</title>
+        <meta 
+          name="description" 
+          content="ทำความรู้จัก Soulis แพลตฟอร์มระบายความในใจแบบไม่ระบุตัวตน เราคือพื้นที่ปลอดภัยที่สร้างขึ้นเพื่อให้ทุกคนมีเพื่อนรับฟังโดยไม่ตัดสิน" 
+        />
+        <link rel="canonical" href="https://soulis.vercel.app/about" />
+
+        {/* Social Media Tags (เวลาแชร์ลิงก์หน้านี้) */}
+        <meta property="og:title" content="เกี่ยวกับเรา - Soulis" />
+        <meta property="og:description" content="ทำความรู้จัก Soulis แพลตฟอร์มระบายความในใจแบบไม่ระบุตัวตน" />
+        <meta property="og:url" content="https://soulis.vercel.app/about" />
+      </Helmet>
       
       {/* Wrapper: ใช้ min-h-full เพื่อยืดเนื้อหา และ pt/pb เพื่อกันขอบบนล่าง */}
       <div className="min-h-full w-full flex flex-col items-center justify-center p-6 pt-24 pb-32">

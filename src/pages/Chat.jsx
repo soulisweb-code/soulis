@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 import { Send, Star, User, AlertTriangle, LogOut, Flag, X } from 'lucide-react';
+import { Helmet } from 'react-helmet-async';
 
 export default function Chat() {
   const { matchId } = useParams();
@@ -250,6 +251,12 @@ export default function Chat() {
         style={{ height: `${viewportHeight}px` }} 
     >
       
+      {/* ✅ ส่วน SEO: ตั้งชื่อหน้าและป้องกัน Google เก็บข้อมูลแชท */}
+      <Helmet>
+        <title>ห้องสนทนา - Soulis พื้นที่ปลอดภัย</title>
+        <meta name="robots" content="noindex" />
+      </Helmet>
+
       {/* Header */}
       <header className="flex-none h-16 bg-soulis-900/80 backdrop-blur-md px-4 shadow flex justify-between items-center z-10 border-b border-white/5">
         <div className="flex items-center gap-3">

@@ -1,11 +1,19 @@
 import { useNavigate } from 'react-router-dom';
 import { Sparkles, Home } from 'lucide-react';
+import { Helmet } from 'react-helmet-async';
 
 export default function ThankYouTalker() {
   const navigate = useNavigate();
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
+      
+      {/* ✅ ส่วน SEO: เปลี่ยนชื่อแท็บให้กำลังใจ และซ่อนจาก Google Search */}
+      <Helmet>
+        <title>ขอบคุณที่ไว้ใจเรา - Soulis ขอให้ใจเบาขึ้นนะ</title>
+        <meta name="robots" content="noindex" />
+      </Helmet>
+
       <div className="absolute bottom-[-20%] right-[-20%] w-[500px] h-[500px] bg-soulis-500/20 rounded-full blur-[100px] animate-float"></div>
 
       <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-12 rounded-[2rem] shadow-2xl w-full max-w-lg text-center relative z-10 animate-float">
