@@ -1,16 +1,22 @@
 import { useEffect, useState, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
-import { Search } from 'lucide-react';
+import { Search, Loader2 } from 'lucide-react';
 
 export default function WaitingRoom() {
   const location = useLocation();
   const navigate = useNavigate();
   const myRole = location.state?.myRole;
-  const [status, setStatus] = useState('กำลังตรวจสอบ...');
+  const [status, setStatus] = useState('กำลังเชื่อมต่อระบบ...');
+  
+  // ใช้ Ref กันการรันซ้ำ
   const isRunning = useRef(false);
+  const queueIdRef = useRef(null);
+  const intervalRef = useRef(null);
+  const channelRef = useRef(null);
 
   useEffect(() => {
+    // 1. เช็ค Session และ Role
     const sessionKey = sessionStorage.getItem('soulis_session');
     if (!sessionKey || !myRole) {
         navigate('/select-role', { replace: true });
@@ -20,87 +26,143 @@ export default function WaitingRoom() {
     if (isRunning.current) return;
     isRunning.current = true;
 
-    let queueId = null;
-    let channel = null;
-
-    const startMatching = async () => {
+    const initializeMatching = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return navigate('/', { replace: true });
 
+      // 🔥 ล้างคิวเก่าของตัวเองทิ้งก่อน (กันบัคค้าง)
       await supabase.from('queue').delete().eq('user_id', user.id);
 
       setStatus('กำลังค้นหาเพื่อนคู่คิด...');
       const lookingFor = myRole === 'talker' ? 'listener' : 'talker';
 
+      // 2. ลองค้นหาคนในคิวก่อน
       const { data: potentialMatch } = await supabase
         .from('queue')
         .select('*')
         .eq('my_role', lookingFor)
-        .neq('user_id', user.id)
-        .order('created_at', { ascending: true })
+        .neq('user_id', user.id) // ไม่เอาตัวเอง
+        .order('created_at', { ascending: true }) // เอาคนรอนานสุด
         .limit(1)
-        .single();
+        .maybeSingle(); // ใช้ maybeSingle เพื่อกัน Error ถ้าไม่เจอ
 
       if (potentialMatch) {
-        setStatus('เจอเพื่อนแล้ว! กำลังตรวจสอบ...');
+        // --- เจอคนรออยู่! จับคู่เลย ---
+        setStatus('เจอเพื่อนแล้ว! กำลังสร้างห้อง...');
         
-        const { data: isBusy } = await supabase.from('matches').select('id').or(`talker_id.eq.${potentialMatch.user_id},listener_id.eq.${potentialMatch.user_id}`).eq('is_active', true).maybeSingle();
+        // เช็คว่าเขาว่างอยู่ไหม (กันชน)
+        const { data: isBusy } = await supabase.from('matches')
+            .select('id')
+            .or(`talker_id.eq.${potentialMatch.user_id},listener_id.eq.${potentialMatch.user_id}`)
+            .eq('is_active', true)
+            .maybeSingle();
 
         if (isBusy) {
-            await supabase.from('queue').delete().eq('id', potentialMatch.id);
-            setTimeout(() => { isRunning.current = false; startMatching(); }, 1000);
+            // เขาไม่ว่างแล้ว (โดนคนอื่นตัดหน้า) -> เริ่มต้นใหม่
+            await supabase.from('queue').delete().eq('id', potentialMatch.id); // ลบคิวผีทิ้ง
+            setTimeout(initializeMatching, 1000);
             return;
         }
 
+        // สร้างห้อง
         const { data: match, error } = await supabase.from('matches').insert([{ 
               talker_id: myRole === 'talker' ? user.id : potentialMatch.user_id,
               listener_id: myRole === 'listener' ? user.id : potentialMatch.user_id,
               is_active: true
           }]).select().single();
 
-        if (error) { isRunning.current = false; startMatching(); return; }
+        if (error) { 
+            // สร้างไม่ผ่าน (อาจจะชนกัน) -> เริ่มใหม่
+            setTimeout(initializeMatching, 1000); 
+            return; 
+        }
 
+        // ลบทั้งคู่จากคิว
         await supabase.from('queue').delete().eq('id', potentialMatch.id);
         navigate(`/chat/${match.id}`, { replace: true });
 
       } else {
-        setStatus('ยังไม่มีใครว่าง... กำลังสร้างคิวรอ...');
-        const { data: myQueue } = await supabase.from('queue').insert([{ user_id: user.id, my_role: myRole, looking_for_role: lookingFor }]).select().single();
-        if (myQueue) queueId = myQueue.id;
+        // --- ไม่เจอใครเลย -> เข้าคิวรอ ---
         setStatus('รอเพื่อนอีกฝั่งสักครู่...');
+        
+        const { data: myQueue } = await supabase.from('queue')
+            .insert([{ user_id: user.id, my_role: myRole, looking_for_role: lookingFor }])
+            .select()
+            .single();
+        
+        if (myQueue) queueIdRef.current = myQueue.id;
 
-        channel = supabase.channel('waiting-room').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'matches' }, (payload) => {
+        // 🔥 A. ตั้งรับ Realtime (วิธีหลัก)
+        channelRef.current = supabase.channel('waiting-room')
+          .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'matches' }, (payload) => {
+             // ถ้ามีห้องใหม่เกิดขึ้น และมีชื่อเราอยู่ในนั้น
              if (payload.new.is_active === true && (payload.new.talker_id === user.id || payload.new.listener_id === user.id)) {
-               if (queueId) supabase.from('queue').delete().eq('id', queueId);
-               navigate(`/chat/${payload.new.id}`, { replace: true });
+               goToChat(payload.new.id);
              }
-          }).subscribe();
+          })
+          .subscribe();
+
+        // 🔥 B. ตั้งรับ Polling (วิธีกันเหนียว: เช็คทุก 3 วิ เผื่อ Realtime ไม่เด้ง)
+        intervalRef.current = setInterval(async () => {
+            const { data: myMatch } = await supabase.from('matches')
+                .select('id')
+                .or(`talker_id.eq.${user.id},listener_id.eq.${user.id}`)
+                .eq('is_active', true)
+                .maybeSingle();
+            
+            if (myMatch) {
+                goToChat(myMatch.id);
+            }
+        }, 3000);
       }
     };
 
-    const randomDelay = Math.floor(Math.random() * 1000) + 500;
-    setTimeout(() => { startMatching(); }, randomDelay);
+    const goToChat = async (matchId) => {
+        if (queueIdRef.current) await supabase.from('queue').delete().eq('id', queueIdRef.current);
+        navigate(`/chat/${matchId}`, { replace: true });
+    };
+
+    // หน่วงเวลานิดนึงเพื่อให้ UI สวยงาม
+    setTimeout(initializeMatching, 500);
 
     return () => {
-      if (channel) supabase.removeChannel(channel);
-      if (queueId) supabase.from('queue').delete().eq('id', queueId);
+      if (channelRef.current) supabase.removeChannel(channelRef.current);
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      // ถ้ากดออก หรือเปลี่ยนหน้า ให้ลบตัวเองจากคิวด้วย
+      if (queueIdRef.current) supabase.from('queue').delete().eq('id', queueIdRef.current);
     };
   }, []);
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden">
-      {/* Nebula Effect */}
-      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-soulis-500/20 rounded-full blur-[120px] animate-pulse"></div>
+    <div className="h-full w-full fixed inset-0 bg-soulis-900 flex flex-col items-center justify-center p-4 text-white text-center font-sans overflow-hidden">
       
+      {/* Background */}
+      <div className="absolute top-[-20%] left-[-20%] w-[500px] h-[500px] bg-soulis-700/30 rounded-full blur-[100px] animate-float"></div>
+      <div className="absolute bottom-[-20%] right-[-20%] w-[500px] h-[500px] bg-soulis-accent/20 rounded-full blur-[100px] animate-float delay-1000"></div>
+
       <div className="z-10 text-center space-y-8 bg-white/5 backdrop-blur-xl p-12 rounded-[2rem] border border-white/10 shadow-2xl w-full max-w-md animate-float">
         <div className="relative inline-block">
-            <div className="w-24 h-24 border-4 border-soulis-500/50 border-t-soulis-300 rounded-full animate-spin"></div>
-            <div className="absolute inset-0 flex items-center justify-center"><Search className="text-white w-8 h-8 animate-pulse" /></div>
+            {/* Loading Animation */}
+            <div className="relative">
+                <div className="w-24 h-24 border-4 border-white/10 rounded-full"></div>
+                <div className="absolute inset-0 w-24 h-24 border-4 border-t-soulis-400 border-r-transparent border-b-transparent border-l-transparent rounded-full animate-spin"></div>
+                <div className="absolute inset-0 flex items-center justify-center">
+                    <Search className="text-white w-8 h-8 animate-pulse" />
+                </div>
+            </div>
         </div>
+        
         <div>
-            <h2 className="text-3xl font-bold text-white mb-3 drop-shadow-lg">{status}</h2>
-            <p className="text-soulis-200 text-sm">ระบบกำลังค้นหาคู่ที่ดีที่สุดให้คุณ...<br/>ท่ามกลางดวงดาวนับล้าน ⭐</p>
+            <h2 className="text-2xl font-bold text-white mb-2 animate-pulse">{status}</h2>
+            <p className="text-soulis-200 text-sm font-light">
+                {myRole === 'talker' ? 'กำลังตามหาคนใจดี...' : 'กำลังรอคนที่มีเรื่องเล่า...'}
+                <br/>ท่ามกลางดวงดาวนับล้าน ⭐
+            </p>
         </div>
+
+        <button onClick={() => navigate('/select-role')} className="text-gray-400 text-xs hover:text-white underline mt-4">
+            ยกเลิกการค้นหา
+        </button>
       </div>
     </div>
   );
