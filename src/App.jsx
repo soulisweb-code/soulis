@@ -1,54 +1,69 @@
+import { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import Login from './pages/Login';
-import RoleSelection from './pages/RoleSelection';
-import WaitingRoom from './pages/WaitingRoom';
-import Chat from './pages/Chat';
-import Profile from './pages/Profile';
-import ThankYouListener from './pages/ThankYouListener';
-import ThankYouTalker from './pages/ThankYouTalker';
-import Instruction from './pages/Instruction';
-import AdminLogin from './pages/AdminLogin';
-import AdminDashboard from './pages/AdminDashboard';
-import About from './pages/About';
-import PrivacyPolicy from './pages/PrivacyPolicy';
 import BanEnforcer from './components/BanEnforcer';
 import Footer from './components/Footer';
-import Support from './pages/Support';
+
+// Lazy Load Pages
+const Login = lazy(() => import('./pages/Login'));
+const RoleSelection = lazy(() => import('./pages/RoleSelection'));
+const WaitingRoom = lazy(() => import('./pages/WaitingRoom'));
+const Chat = lazy(() => import('./pages/Chat'));
+const Profile = lazy(() => import('./pages/Profile'));
+const ThankYouListener = lazy(() => import('./pages/ThankYouListener'));
+const ThankYouTalker = lazy(() => import('./pages/ThankYouTalker'));
+const Instruction = lazy(() => import('./pages/Instruction'));
+const AdminLogin = lazy(() => import('./pages/AdminLogin'));
+const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
+const About = lazy(() => import('./pages/About'));
+const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
+const Support = lazy(() => import('./pages/Support'));
+const NotFound = lazy(() => import('./pages/NotFound'));
+
+// Loading Screen Component
+const PageLoader = () => (
+  <div className="flex items-center justify-center min-h-screen text-white">
+    <div className="flex flex-col items-center gap-4">
+      <div className="w-12 h-12 border-4 border-soulis-500 border-t-transparent rounded-full animate-spin"></div>
+      <p className="text-soulis-300 text-sm animate-pulse">Loading...</p>
+    </div>
+  </div>
+);
 
 function App() {
   return (
     <BrowserRouter>
-      {/* Layer ดวงดาว (Galaxy Background) */}
-      <div className="stars"></div>
-      <div className="stars2"></div>
-      
       {/* ยามเฝ้าประตู (เช็คคนโดนแบน) */}
-      <BanEnforcer /> 
+      <BanEnforcer />
 
-      <Routes>
-        {/* User Routes */}
-        <Route path="/" element={<Login />} />
-        <Route path="/select-role" element={<RoleSelection />} />
-        <Route path="/instruction" element={<Instruction />} />
-        <Route path="/waiting" element={<WaitingRoom />} />
-        <Route path="/chat/:matchId" element={<Chat />} />
-        <Route path="/profile" element={<Profile />} />
-        <Route path="/thank-you-listener" element={<ThankYouListener />} />
-        <Route path="/thank-you-talker" element={<ThankYouTalker />} />
-        
-        {/* Info Pages */}
-        <Route path="/about" element={<About />} />
-        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-        
-        {/* Admin Routes */}
-        <Route path="/admin" element={<AdminLogin />} />
-        <Route path="/admin-dashboard" element={<AdminDashboard />} />
-        <Route path="/support" element={<Support />} />
-      </Routes>
+      <Suspense fallback={<PageLoader />}>
+        <Routes>
+          {/* User Routes */}
+          <Route path="/" element={<Login />} />
+          <Route path="/select-role" element={<RoleSelection />} />
+          <Route path="/instruction" element={<Instruction />} />
+          <Route path="/waiting" element={<WaitingRoom />} />
+          <Route path="/chat/:matchId" element={<Chat />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/thank-you-listener" element={<ThankYouListener />} />
+          <Route path="/thank-you-talker" element={<ThankYouTalker />} />
+
+          {/* Info Pages */}
+          <Route path="/about" element={<About />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+
+          {/* Admin Routes */}
+          <Route path="/admin" element={<AdminLogin />} />
+          <Route path="/admin-dashboard" element={<AdminDashboard />} />
+          <Route path="/support" element={<Support />} />
+
+          {/* 404 Not Found */}
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </Suspense>
 
       {/* Footer Menu (จะซ่อนตัวเองอัตโนมัติในหน้าแชท/Admin) */}
       <Footer />
-      
+
     </BrowserRouter>
   );
 }
