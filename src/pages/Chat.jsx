@@ -4,9 +4,15 @@ import { supabase } from '../supabaseClient';
 import { Send, Star, User, AlertTriangle, LogOut, Flag, X } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
 
+// 🔥 1. Import ระบบเสียง
+import { useSound } from '../context/SoundContext';
+
 export default function Chat() {
   const { matchId } = useParams();
   const navigate = useNavigate();
+  
+  // 🔥 2. ดึงฟังก์ชันเล่นเสียงมาใช้
+  const { playNotification } = useSound();
   
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
@@ -135,7 +141,11 @@ export default function Chat() {
       channelRef.current = supabase.channel(`room-${matchId}`)
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `match_id=eq.${matchId}` }, (payload) => {
            if (payload.new.content === '###END###') finalExit(userIsTalker);
-           else if (payload.new.sender_id !== user.id) fetchMessages();
+           else if (payload.new.sender_id !== user.id) {
+               // 🔥 3. ถ้าคนอื่นส่งมา ให้ดึงข้อความและเล่นเสียง
+               fetchMessages();
+               playNotification(); 
+           }
         })
         .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'matches', filter: `id=eq.${matchId}` }, (payload) => {
            if (payload.new.is_active === false) finalExit(userIsTalker);
@@ -151,7 +161,7 @@ export default function Chat() {
 
     setupChat();
     return () => { killSystem(); };
-  }, [matchId, navigate]);
+  }, [matchId, navigate]); // playNotification ไม่ต้องใส่ใน dependency array เพื่อป้องกัน re-render วนลูป
 
   useEffect(() => { if(!isFinished.current) scrollToBottom(); }, [messages]);
 
