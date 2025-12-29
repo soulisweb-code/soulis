@@ -55,10 +55,10 @@ export default function Profile() {
     window.location.href = '/';
   };
 
-  if (loading) return <div className="h-full w-full flex items-center justify-center text-white bg-soulis-900">Loading...</div>;
+  if (loading) return <div className="h-full w-full flex items-center justify-center text-white bg-transparent">Loading...</div>;
 
   return (
-    <div className="h-[100dvh] w-full overflow-y-auto overflow-x-hidden bg-soulis-900 font-sans relative safe-pb">
+    <div className="h-[100dvh] w-full overflow-y-auto overflow-x-hidden bg-transparent font-sans relative safe-pb">
       
       {/* ✅ ส่วน SEO: ตั้งชื่อหน้าและป้องกัน Google เก็บข้อมูลส่วนตัว */}
       <Helmet>
