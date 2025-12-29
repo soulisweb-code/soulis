@@ -20,27 +20,35 @@ export default function Chat() {
   const [showReportModal, setShowReportModal] = useState(false); 
   const [reportReason, setReportReason] = useState('');
   
-  // 🔥 State ใหม่: สำหรับเก็บข้อความ "อื่นๆ"
   const [otherReasonText, setOtherReasonText] = useState('');
 
   const [showRating, setShowRating] = useState(false);
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState('');
   
-  // State คุมความสูงจอ (แก้เรื่องคีย์บอร์ด)
-  const [viewportHeight, setViewportHeight] = useState(window.innerHeight);
+  // Initialize with window.innerHeight, but prefer visualViewport if available
+  const [viewportHeight, setViewportHeight] = useState(
+    window.visualViewport ? window.visualViewport.height : window.innerHeight
+  );
 
   const messagesEndRef = useRef(null);
   const isFinished = useRef(false);
   const intervalRef = useRef(null);
   const channelRef = useRef(null);
 
-  // Layout Fix: Visual Viewport
+  // Layout Fix: Visual Viewport (Critical for iOS Safari)
   useEffect(() => {
+    // Handler specifically for viewport resizing (keyboard open/close)
     const handleResize = () => {
       if (window.visualViewport) {
         setViewportHeight(window.visualViewport.height);
-        setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'auto' }), 0);
+        
+        // Slight delay to ensure layout has repainted before scrolling
+        setTimeout(() => {
+          messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
+          // Force scroll to bottom on iOS to reveal input if hidden
+          window.scrollTo(0, 0); 
+        }, 100);
       } else {
         setViewportHeight(window.innerHeight);
       }
@@ -48,7 +56,8 @@ export default function Chat() {
 
     if (window.visualViewport) {
       window.visualViewport.addEventListener('resize', handleResize);
-      handleResize();
+      window.visualViewport.addEventListener('scroll', handleResize); // Listen to scroll too
+      handleResize(); // Initial call
     } else {
       window.addEventListener('resize', handleResize);
     }
@@ -56,6 +65,7 @@ export default function Chat() {
     return () => {
       if (window.visualViewport) {
         window.visualViewport.removeEventListener('resize', handleResize);
+        window.visualViewport.removeEventListener('scroll', handleResize);
       } else {
         window.removeEventListener('resize', handleResize);
       }
@@ -100,7 +110,6 @@ export default function Chat() {
 
       const { data: match } = await supabase.from('matches').select('*').eq('id', matchId).single();
       if (!match || match.is_active === false) {
-        const tempIsTalker = match ? (match.talker_id === user.id) : false;
         sessionStorage.removeItem('soulis_session');
         alert('การสนทนานี้จบลงแล้วครับ');
         navigate('/select-role', { replace: true });
@@ -166,11 +175,10 @@ export default function Chat() {
   const handleSubmitReport = async () => {
     if (!reportReason) return alert("กรุณาเลือกเหตุผล");
     
-    // 🔥 เตรียมข้อมูลเหตุผล
     let finalReason = reportReason;
     if (reportReason === 'อื่นๆ') {
         if (!otherReasonText.trim()) return alert("กรุณาระบุรายละเอียดเพิ่มเติมสำหรับ 'อื่นๆ'");
-        finalReason = `อื่นๆ: ${otherReasonText}`; // รวมข้อความเข้าไป
+        finalReason = `อื่นๆ: ${otherReasonText}`; 
     }
 
     if (!confirm("ยืนยันการรายงาน?")) return;
@@ -178,7 +186,7 @@ export default function Chat() {
     const { error } = await supabase.from('reports').insert({ 
         reporter_id: userId, 
         reported_id: partnerId, 
-        reason: finalReason, // ส่งค่าที่รวมแล้วไป
+        reason: finalReason, 
         chat_evidence: messages, 
         status: 'pending' 
     });
@@ -194,7 +202,6 @@ export default function Chat() {
     navigate('/thank-you-talker', { replace: true });
   };
 
-  // 🔥 Modal Report ปรับปรุงใหม่
   if (showReportModal) return (
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" style={{ height: `${viewportHeight}px` }}>
         <div className="bg-soulis-800 border border-soulis-600 p-6 rounded-2xl w-full max-w-sm animate-float flex flex-col max-h-[90%]">
@@ -208,7 +215,6 @@ export default function Chat() {
               <button key={r} onClick={() => setReportReason(r)} className={`w-full text-left px-4 py-2.5 rounded-lg text-sm transition ${reportReason === r ? 'bg-red-600 text-white' : 'bg-white/5 text-gray-300 hover:bg-white/10'}`}>{r}</button>
             ))}
 
-            {/* 🔥 ช่องพิมพ์จะโผล่มาเมื่อเลือก "อื่นๆ" */}
             {reportReason === 'อื่นๆ' && (
                 <div className="pt-2 animate-fade-in">
                     <label className="text-xs text-red-300 mb-1 block">* โปรดระบุรายละเอียด:</label>
@@ -228,7 +234,6 @@ export default function Chat() {
       </div>
   );
 
-  // ... (ส่วน Modal Review คงเดิม) ...
   if (showRating) return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-soulis-900 p-4" style={{ height: `${viewportHeight}px` }}>
         <div className="bg-white/10 backdrop-blur-xl border border-white/20 p-8 rounded-3xl shadow-2xl w-full max-w-md text-center animate-float">
@@ -248,16 +253,20 @@ export default function Chat() {
   return (
     <div 
         className="fixed inset-0 w-full bg-soulis-900 flex flex-col overflow-hidden"
-        style={{ height: `${viewportHeight}px` }} 
+        style={{ 
+          height: `${viewportHeight}px`,
+          position: 'fixed', // Explicitly fixed to viewport
+          top: 0, 
+          left: 0,
+          touchAction: 'none' // Disable browser gestures that might interfere
+        }} 
     >
       
-      {/* ✅ ส่วน SEO: ตั้งชื่อหน้าและป้องกัน Google เก็บข้อมูลแชท */}
       <Helmet>
         <title>ห้องสนทนา - Soulis พื้นที่ปลอดภัย</title>
         <meta name="robots" content="noindex" />
       </Helmet>
 
-      {/* Header */}
       <header className="flex-none h-16 bg-soulis-900/80 backdrop-blur-md px-4 shadow flex justify-between items-center z-10 border-b border-white/5">
         <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-gradient-to-br from-soulis-500 to-soulis-700 rounded-full flex items-center justify-center shadow-md"><User className="text-white w-5 h-5" /></div>
@@ -292,7 +301,9 @@ export default function Chat() {
       </div>
 
       {/* Input Bar */}
-      <form onSubmit={sendMessage} className="flex-none p-3 bg-soulis-900/95 backdrop-blur-xl border-t border-white/5 flex gap-2">
+      <form onSubmit={sendMessage} className="flex-none p-3 bg-soulis-900/95 backdrop-blur-xl border-t border-white/5 flex gap-2"
+            style={{ paddingBottom: 'env(safe-area-inset-bottom)' }} // Extra safety for iPhone X+ home bar
+      >
         <input 
             type="text" 
             value={newMessage} 
