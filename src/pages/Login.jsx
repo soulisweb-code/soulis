@@ -33,7 +33,7 @@ export default function Login() {
 
   return (
     // 🔥 Layout Fix: ใช้ h-full + overflow-y-auto เพื่อให้เลื่อนได้ในมือถือ
-    <div className="h-[100dvh] w-full overflow-y-auto overflow-x-hidden bg-soulis-900 font-sans relative safe-pb">
+    <div className="h-[100dvh] w-full overflow-y-auto overflow-x-hidden bg-transparent font-sans relative safe-pb">
 
       {/* ✅ ส่วน SEO: หน้าแรกสำคัญที่สุด! */}
       <Helmet>
