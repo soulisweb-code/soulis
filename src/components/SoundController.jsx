@@ -10,7 +10,11 @@ export default function SoundController() {
   if (hiddenPages.includes(location.pathname)) return null;
 
   return (
-    <div className="fixed top-6 left-1/2 transform -translate-x-1/2 z-[100] animate-fade-in">
+    // 🔥 แก้บรรทัดนี้: เปลี่ยนจาก top-6 เฉยๆ เป็น "top-20 md:top-6"
+    // top-20 = มือถือ (ดันลงมาให้พ้น Header)
+    // md:top-6 = จอใหญ่ (กลับไปอยู่ตำแหน่งเดิม)
+    <div className="fixed top-20 md:top-6 left-1/2 transform -translate-x-1/2 z-[100] animate-fade-in w-max">
+      
       <div className="flex items-center gap-2 bg-soulis-900/60 backdrop-blur-xl border border-white/10 p-2 rounded-full shadow-lg shadow-purple-500/10 hover:shadow-purple-500/20 transition-all duration-300">
         
         {/* กลุ่มปุ่มเพลง + Slider */}
@@ -23,7 +27,7 @@ export default function SoundController() {
                 {isMusicOn ? <Music size={16} /> : <VolumeX size={16} />}
             </button>
 
-            {/* 🔥 Slider จะโผล่มาแบบ Smooth เมื่อเปิดเพลง */}
+            {/* Slider */}
             <div className={`overflow-hidden transition-all duration-500 ease-in-out ${isMusicOn ? 'w-20 opacity-100 mr-1' : 'w-0 opacity-0'}`}>
                 <input 
                     type="range" 
