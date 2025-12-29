@@ -3,38 +3,42 @@
 @tailwind utilities;
 
 /* =========================================
-   ✨ GALAXY ANIMATION (อนิเมชันลอยขึ้นช้าๆ)
+   📱 SAFARI & MOBILE FIXES (สำคัญมาก)
    ========================================= */
-@keyframes animStar {
-  from { transform: translateY(0px); }
-  to { transform: translateY(-2000px); }
+:root {
+  --color-soulis-900: #1a0b2e;
+  --color-soulis-800: #2d1b4e;
 }
 
 html, body, #root {
   height: 100%;
   width: 100%;
-  position: fixed;
-  overflow: hidden;
+  margin: 0;
+  padding: 0;
+  
+  /* 🔥 KEY FIX: ล็อคไม่ให้ Body เลื่อนเอง (เราจะไปสั่งเลื่อนใน div ข้างในแทน) */
+  overflow: hidden; 
+  
+  /* ห้ามเด้งดึ๋งเวลาเลื่อนสุดจอ */
   overscroll-behavior: none;
+  
+  /* ปิดสีฟ้าๆ เวลากดปุ่มในมือถือ */
+  -webkit-tap-highlight-color: transparent;
 }
 
+/* ทำให้การเลื่อนใน iOS ลื่นไหล (Momentum Scrolling) */
+* {
+  -webkit-overflow-scrolling: touch;
+}
 
 /* =========================================
-   💜 BODY & BACKGROUND (PURPLE THEME)
+   💜 BODY & BACKGROUND
    ========================================= */
 body {
   @apply text-white;
   font-family: 'Kanit', sans-serif;
   
-  margin: 0;
-  padding: 0;
-  min-height: 100vh;
-  /* ซ่อน scrollbar แนวนอน กันดาวล้น */
-  overflow-x: hidden; /* ห้ามเลื่อนซ้ายขวา */
-  overflow-y: auto;   /* ให้เลื่อนขึ้นลงได้ตามปกติ */
-  overscroll-behavior: none;
-
-  /* พื้นหลังสีม่วงไล่เฉดเข้มๆ ดูลึกลับ */
+  /* พื้นหลังสีม่วงไล่เฉดเข้มๆ */
   background: radial-gradient(ellipse at bottom, #2a0845 0%, #0c0214 100%);
   
   position: relative;
@@ -42,22 +46,23 @@ body {
 }
 
 /* =========================================
-   🌟 CUTE STAR LAYERS (แน่นๆ นุ่มๆ)
+   ✨ GALAXY ANIMATION (ดาวลอย)
    ========================================= */
+@keyframes animStar {
+  from { transform: translateY(0px); }
+  to { transform: translateY(-2000px); }
+}
 
-/* เทคนิคทำดาวน่ารัก: ใช้ border-radius: 50% ทำให้เงาสี่เหลี่ยมกลายเป็นจุดวงกลมมนๆ */
-
-/* --- Layer 1: ฝุ่นดาวละเอียด (เยอะที่สุด, จางๆ, เคลื่อนที่ช้า) --- */
+/* --- Layer 1: ฝุ่นดาวละเอียด --- */
 body::before {
   content: " ";
   position: absolute;
   top: 0; left: 0;
-  width: 2px; height: 2px; /* ขนาดจุดตั้งต้น */
-  border-radius: 50%; /* ✨ ทำให้เป็นวงกลมน่ารัก */
+  width: 2px; height: 2px;
+  border-radius: 50%;
   background: transparent;
   z-index: -1;
-  opacity: 0.6; /* จางๆ ให้ดูฟุ้ง */
-  /* Box Shadow แบบจัดเต็ม เพิ่มจำนวนให้แน่นยิบ */
+  opacity: 0.6;
   box-shadow: 
     124px 543px #FFF, 1532px 423px #FFF, 243px 1231px #FFF, 876px 231px #FFF,
     1432px 876px #FFF, 543px 123px #FFF, 987px 1543px #FFF, 234px 876px #FFF,
@@ -69,53 +74,51 @@ body::before {
     432px 231px #FFF, 1543px 1098px #FFF, 987px 432px #FFF, 234px 1765px #FFF,
     50px 800px #FFF, 300px 200px #FFF, 1100px 900px #FFF, 1800px 100px #FFF,
     600px 1400px #FFF, 900px 600px #FFF, 1200px 1100px #FFF, 1500px 1600px #FFF,
-    /* เพิ่มอีกชุดเพื่อความแน่น */
     1124px 1543px #FFF, 532px 1423px #FFF, 1243px 231px #FFF, 1876px 1231px #FFF,
     432px 1876px #FFF, 1543px 1123px #FFF, 1987px 543px #FFF, 1234px 1876px #FFF,
     654px 1321px #FFF, 1876px 432px #FFF, 1123px 1654px #FFF, 876px 1987px #FFF;
-  
-  /* อนิเมชันยาวๆ ให้ไหลช้าๆ */
   animation: animStar 200s linear infinite;
 }
 
-/* --- Layer 2: ดวงดาวสว่าง (ใหญ่ขึ้น, สว่างกว่า, เคลื่อนที่เร็วกว่านิดหน่อย) --- */
+/* --- Layer 2: ดวงดาวสว่าง --- */
 body::after {
   content: " ";
   position: absolute;
   top: 0; left: 0;
-  width: 3px; height: 3px; /* ใหญ่ขึ้น */
-  border-radius: 50%; /* ✨ เป็นวงกลม */
+  width: 3px; height: 3px;
+  border-radius: 50%;
   background: transparent;
   z-index: -1;
-  opacity: 0.9; /* สว่างขึ้น */
-  /* Box Shadow ชุดที่ 2 */
+  opacity: 0.9;
   box-shadow: 
     654px 123px #FFF, 1234px 1654px #FFF, 231px 432px #FFF, 1765px 987px #FFF,
     876px 1543px #FFF, 432px 765px #FFF, 1543px 234px #FFF, 987px 1432px #FFF,
     123px 1876px #FFF, 1654px 543px #FFF, 321px 1098px #FFF,
     200px 900px #FFF, 1400px 300px #FFF, 700px 1200px #FFF,
     900px 100px #FFF, 100px 1700px #FFF, 1600px 600px #FFF;
-  
   animation: animStar 120s linear infinite;
 }
 
 /* =========================================
-   🛠 UI TWEAKS (ปรับแต่งอื่นๆ)
+   🛠 UTILITIES & UI
    ========================================= */
 
-/* Scrollbar สีม่วงเข้าธีม */
-::-webkit-scrollbar {
-  width: 6px; /* ทำให้เล็กลงหน่อยดูมินิมอล */
+/* Scrollbar สวยๆ */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
 }
-::-webkit-scrollbar-track {
-  background: rgba(12, 2, 20, 0.5);
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
 }
-::-webkit-scrollbar-thumb {
-  @apply bg-soulis-600 rounded-full;
-  border: 2px solid rgba(12, 2, 20, 0.8); /* เพิ่มขอบให้ดูมีมิติ */
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.4);
 }
 
-/* แก้ Input Autofill ให้เป็นสีม่วง */
+/* แก้ Input Autofill */
 input:-webkit-autofill,
 input:-webkit-autofill:hover, 
 input:-webkit-autofill:focus, 
@@ -123,4 +126,37 @@ input:-webkit-autofill:active{
     -webkit-box-shadow: 0 0 0 30px #0c0214 inset !important;
     -webkit-text-fill-color: white !important;
     transition: background-color 5000s ease-in-out 0s;
+}
+
+/* Animation อื่นๆ */
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+  100% { transform: translateY(0px); }
+}
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+@keyframes float-slow {
+  0% { transform: translate(0px, 0px) scale(1); }
+  33% { transform: translate(30px, -50px) scale(1.1); }
+  66% { transform: translate(-20px, 20px) scale(0.9); }
+  100% { transform: translate(0px, 0px) scale(1); }
+}
+.animate-float-slow {
+  animation: float-slow 20s ease-in-out infinite;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out forwards;
+}
+
+/* 🔥 SAFE AREA UTILITY: กันขอบล่าง iPhone X+ บังปุ่ม */
+.safe-pb {
+  padding-bottom: env(safe-area-inset-bottom, 20px);
 }

@@ -35,7 +35,7 @@ export default function RoleSelection() {
 
   return (
     // 🔥 แก้ไข Layout หลัก: ให้เลื่อนได้ และมีความสูงเต็มจอ
-    <div className="h-full w-full overflow-y-auto overflow-x-hidden font-sans relative">
+    <div className="h-[100dvh] w-full overflow-y-auto overflow-x-hidden bg-soulis-900 font-sans relative safe-pb">
       
       {/* ✅ ส่วน SEO: เปลี่ยนชื่อ Title ตามบริบทการใช้งาน */}
       <Helmet>
