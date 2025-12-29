@@ -7,7 +7,9 @@ export function SoundProvider({ children }) {
   const [isMusicOn, setIsMusicOn] = useState(false);
   const [isNotifyOn, setIsNotifyOn] = useState(true);
   
-  // 🔥 เพิ่ม State ระดับเสียง (เริ่มที่ 0.1 = 10%)
+  // 🔥 1. เพิ่ม Ref เพื่อเก็บสถานะล่าสุด (แก้ปัญหา Closure Trap)
+  const isNotifyOnRef = useRef(isNotifyOn);
+  
   const [volume, setVolume] = useState(0.1); 
   
   const musicRef = useRef(null);
@@ -16,21 +18,22 @@ export function SoundProvider({ children }) {
 
   const silentPages = ['/', '/admin', '/admin-dashboard'];
 
-  // จัดการการเล่นเพลง (Play/Pause)
+  // 🔥 2. อัปเดต Ref ทุกครั้งที่ State เปลี่ยน
+  useEffect(() => {
+    isNotifyOnRef.current = isNotifyOn;
+  }, [isNotifyOn]);
+
   useEffect(() => {
     if (silentPages.includes(location.pathname)) {
         musicRef.current?.pause();
     } else {
         if (isMusicOn) {
-            // 🔥 ต้องตั้งค่า volume ก่อนเล่นเสมอ
             if (musicRef.current) musicRef.current.volume = volume;
-            
             musicRef.current?.play().catch(() => setIsMusicOn(false));
         }
     }
   }, [location, isMusicOn]);
 
-  // 🔥 จัดการระดับเสียงแบบ Realtime
   useEffect(() => {
     if (musicRef.current) {
         musicRef.current.volume = volume;
@@ -41,7 +44,7 @@ export function SoundProvider({ children }) {
     if (isMusicOn) {
       musicRef.current?.pause();
     } else {
-      if (musicRef.current) musicRef.current.volume = volume; // กันเหนียว
+      if (musicRef.current) musicRef.current.volume = volume;
       musicRef.current?.play();
     }
     setIsMusicOn(!isMusicOn);
@@ -49,18 +52,19 @@ export function SoundProvider({ children }) {
 
   const toggleNotify = () => {
     setIsNotifyOn(!isNotifyOn);
+    // (Ref จะถูกอัปเดตอัตโนมัติจาก useEffect ข้างบน)
   };
 
   const playNotification = () => {
-    if (isNotifyOn && notifyRef.current) {
-        notifyRef.current.volume = 0.5; // เสียงแจ้งเตือนดัง 50% (ดังกว่าเพลงหน่อยจะได้ยินชัด)
+    // 🔥 3. เช็คจาก Ref แทน State (จะได้ค่าล่าสุดเสมอ แม้ใน Event Listener เก่า)
+    if (isNotifyOnRef.current && notifyRef.current) {
+        notifyRef.current.volume = 0.5;
         notifyRef.current.currentTime = 0;
         notifyRef.current.play().catch(e => console.log("Notify error:", e));
     }
   };
 
   return (
-    // ส่ง volume และ setVolume ออกไปให้ Controller ใช้
     <SoundContext.Provider value={{ isMusicOn, toggleMusic, isNotifyOn, toggleNotify, playNotification, volume, setVolume }}>
       {children}
       
