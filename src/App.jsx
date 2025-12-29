@@ -42,7 +42,7 @@ function App() {
       {/* 🔥 2. ครอบแอปด้วย SoundProvider เพื่อให้เพลงเล่นต่อเนื่องไม่ขาดตอน */}
       <SoundProvider>
         
-        {/* 🔥 3. ใส่ปุ่มควบคุมเสียง (จะลอยอยู่ข้างบน และซ่อนเองในหน้า Login/Admin) */}
+        {/* 🔥 3. ใส่ปุ่มควบคุมเสียง */}
         <SoundController />
 
         <Suspense fallback={<PageLoader />}>
@@ -51,7 +51,10 @@ function App() {
             <Route path="/" element={<Login />} />
             <Route path="/select-role" element={<RoleSelection />} />
             <Route path="/instruction" element={<Instruction />} />
-            <Route path="/waiting-room" element={<WaitingRoom />} />
+            
+            {/* ✅ แก้กลับเป็น /waiting ให้ตรงกับ URL ที่เรียกใช้ */}
+            <Route path="/waiting" element={<WaitingRoom />} />
+            
             <Route path="/chat/:matchId" element={<Chat />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/thank-you-listener" element={<ThankYouListener />} />
@@ -71,7 +74,7 @@ function App() {
           </Routes>
         </Suspense>
 
-        {/* Footer Menu (จะซ่อนตัวเองอัตโนมัติในหน้าแชท/Admin) */}
+        {/* Footer Menu */}
         <Footer />
 
       </SoundProvider>
