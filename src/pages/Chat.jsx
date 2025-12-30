@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
-import { Send, Star, User, AlertTriangle, LogOut, Flag, X, WifiOff } from 'lucide-react'; // เพิ่ม WifiOff ไอคอน
+import { Send, Star, User, AlertTriangle, LogOut, Flag, X, WifiOff } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
 import { useSound } from '../context/SoundContext';
 
@@ -18,12 +18,8 @@ export default function Chat() {
   const [partnerRole, setPartnerRole] = useState('');
   const [partnerRating, setPartnerRating] = useState(null);
 
-  // State เช็กสถานะ Online
   const [isPartnerOnline, setIsPartnerOnline] = useState(false);
-  
-  // 🔥 State ใหม่: ควบคุม Modal แจ้งเตือนเมื่อเพื่อนหลุด
   const [showDisconnectWarning, setShowDisconnectWarning] = useState(false);
-
   const [showConfirmEnd, setShowConfirmEnd] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false); 
   const [reportReason, setReportReason] = useState('');
@@ -88,7 +84,7 @@ export default function Chat() {
     killSystem();
     sessionStorage.removeItem('soulis_session');
     setShowConfirmEnd(false);
-    setShowDisconnectWarning(false); // ปิด popup แจ้งเตือนด้วยถ้าจบแชท
+    setShowDisconnectWarning(false);
     if (talkerMode) setShowRating(true); 
     else navigate('/thank-you-listener', { replace: true });
   };
@@ -154,14 +150,12 @@ export default function Chat() {
         .on('presence', { event: 'join' }, ({ key }) => {
            if (key === targetPartnerId) {
              setIsPartnerOnline(true);
-             // 🔥 ถ้าเพื่อนกลับมา ให้ปิดหน้าแจ้งเตือนทันที
              setShowDisconnectWarning(false); 
            }
         })
         .on('presence', { event: 'leave' }, ({ key }) => {
            if (key === targetPartnerId) {
              setIsPartnerOnline(false);
-             // 🔥 ถ้าเพื่อนหลุด ให้เด้งเตือน
              setShowDisconnectWarning(true);
            }
         })
@@ -222,13 +216,33 @@ export default function Chat() {
         if (!otherReasonText.trim()) return alert("กรุณาระบุรายละเอียดเพิ่มเติมสำหรับ 'อื่นๆ'");
         finalReason = `อื่นๆ: ${otherReasonText}`; 
     }
-    if (!confirm("ยืนยันการรายงาน?")) return;
-    const { error } = await supabase.from('reports').insert({ 
-        reporter_id: userId, reported_id: partnerId, reason: finalReason, chat_evidence: messages, status: 'pending' 
-    });
-    if (error) return alert("Error: " + error.message);
-    alert("ได้รับรายงานแล้ว");
-    confirmEndChat(); 
+    if (!confirm("ยืนยันการรายงานและจบการสนทนาทันที?")) return;
+
+    try {
+        const { error } = await supabase.from('reports').insert({ 
+            reporter_id: userId, reported_id: partnerId, reason: finalReason, chat_evidence: messages, status: 'pending' 
+        });
+        if (error) throw error;
+
+        alert("ได้รับรายงานแล้ว ระบบจะนำคุณออกจากห้องสนทนา");
+        
+        // จบแชทและนำทางออกทันทีเพื่อกันสแปม
+        await supabase.from('messages').insert([{ match_id: matchId, sender_id: userId, content: '###END###' }]);
+        await supabase.from('matches').update({ is_active: false }).eq('id', matchId);
+        
+        isFinished.current = true;
+        killSystem();
+        sessionStorage.removeItem('soulis_session');
+
+        if (isTalker) {
+            setShowReportModal(false);
+            setShowRating(true);
+        } else {
+            navigate('/thank-you-listener', { replace: true });
+        }
+    } catch (err) {
+        alert("Error: " + err.message);
+    }
   };
 
   const submitReview = async () => {
@@ -314,7 +328,6 @@ export default function Chat() {
         </div>
       </header>
 
-      {/* Chat Area */}
       <div className="flex-1 overflow-y-auto px-4 py-2 space-y-3 custom-scrollbar">
         {messages.map((msg, index) => {
             const isMe = msg.sender_id === userId;
@@ -333,7 +346,6 @@ export default function Chat() {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input Bar */}
       <form onSubmit={sendMessage} className="flex-none p-3 bg-soulis-900/95 backdrop-blur-xl border-t border-white/5 flex gap-2" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
         <input 
             type="text" value={newMessage} onChange={(e) => setNewMessage(e.target.value)} 
@@ -343,7 +355,6 @@ export default function Chat() {
         <button type="submit" disabled={!newMessage.trim()} className="bg-soulis-500 hover:bg-soulis-400 text-white p-3 rounded-full transition shadow-lg shadow-soulis-500/30 disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"><Send size={20}/></button>
       </form>
 
-      {/* 🔥 Modal แจ้งเตือนเมื่อคู่สนทนาหลุด */}
       {showDisconnectWarning && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
             <div className="bg-soulis-800 border border-red-500/50 p-6 rounded-2xl w-full max-w-sm text-center animate-float shadow-2xl">
@@ -373,7 +384,6 @@ export default function Chat() {
         </div>
       )}
 
-      {/* Confirm End Modal */}
       {showConfirmEnd && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" style={{ height: `${viewportHeight}px` }}>
             <div className="bg-soulis-800 border border-soulis-600 p-6 rounded-2xl w-full max-w-sm text-center animate-float">
