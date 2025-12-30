@@ -7,7 +7,7 @@ export default function About() {
 
   return (
     // 🔥 HERO FIX: Layout สำหรับการเลื่อน
-    <div className="fixed inset-0 z-10 bg-soulis-900 h-[100dvh] w-full overflow-y-auto overflow-x-hidden font-sans">
+    <div className="fixed inset-0 z-10 bg-transparent h-[100dvh] w-full overflow-y-auto overflow-x-hidden font-sans">
       
       {/* ✅ ส่วน SEO: เพิ่ม Helmet ตรงนี้ เพื่อบอก Google ว่าหน้านี้คือหน้า "เกี่ยวกับเรา" */}
       <Helmet>

@@ -20,7 +20,7 @@ export default function Support() {
   return (
     // 🔥 HERO FIX: บังคับด้วย style โดยตรง เพื่อแหกกฎ index.css
     <div 
-        className="fixed inset-0 z-50 bg-soulis-900 w-full"
+        className="fixed inset-0 z-50 bg-transparent w-full"
         style={{ 
             height: '100dvh',           // ความสูงเต็มจอแบบ Dynamic
             overflowY: 'scroll',        // บังคับให้มี Scrollbar เสมอ (แหกกฎ hidden)

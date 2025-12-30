@@ -7,7 +7,7 @@ export default function PrivacyPolicy() {
 
   return (
     // 🔥 HERO FIX: fixed inset-0 + overflow-y-auto เพื่อให้เลื่อนได้ชัวร์
-    <div className="fixed inset-0 z-10 bg-soulis-900 h-[100dvh] w-full overflow-y-auto overflow-x-hidden font-sans">
+    <div className="fixed inset-0 z-10 bg-transparent h-[100dvh] w-full overflow-y-auto overflow-x-hidden font-sans">
       
       {/* ✅ ส่วน SEO: เพิ่ม Helmet สำหรับหน้านโยบายความเป็นส่วนตัว */}
       <Helmet>
