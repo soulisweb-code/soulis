@@ -18,12 +18,12 @@ export default function Support() {
   };
 
   return (
-    // 🔥 HERO FIX: บังคับด้วย style โดยตรง เพื่อแหกกฎ index.css
+    // 🔥 HERO FIX: เปลี่ยน z-50 เป็น z-30 (เพื่อให้ Footer ที่เป็น z-40 หรือ z-50 ลอยทับได้)
     <div 
-        className="fixed inset-0 z-50 bg-transparent w-full"
+        className="fixed inset-0 z-30 bg-soulis-900 w-full" 
         style={{ 
             height: '100dvh',           // ความสูงเต็มจอแบบ Dynamic
-            overflowY: 'scroll',        // บังคับให้มี Scrollbar เสมอ (แหกกฎ hidden)
+            overflowY: 'scroll',        // บังคับให้มี Scrollbar เสมอ
             overflowX: 'hidden',        // ห้ามเลื่อนซ้ายขวา
             WebkitOverflowScrolling: 'touch', // ให้ iOS เลื่อนลื่นๆ
             position: 'fixed'           // ยึดทับหน้าจอเดิม
@@ -42,7 +42,7 @@ export default function Support() {
         {/* Social Media Tags */}
         <meta property="og:title" content="สนับสนุนผู้พัฒนา - Soulis" />
         <meta property="og:description" content="ร่วมเป็นส่วนหนึ่งในการขับเคลื่อนสังคมแห่งการรับฟัง" />
-        <meta property="og:url" content="https://soulis.in.th//support" />
+        <meta property="og:url" content="https://soulis.in.th/support" />
       </Helmet>
 
       {/* Wrapper ข้างใน: ใช้ min-h-full และ padding เยอะๆ */}
