@@ -46,23 +46,23 @@ body {
 }
 
 /* =========================================
-   ✨ GALAXY ANIMATION (ดาวลอย)
+   ✨ GALAXY ANIMATION (ดาวลอย - แบบเยอะพิเศษ)
    ========================================= */
+
 @keyframes animStar {
   from { transform: translateY(0px); }
   to { transform: translateY(-2000px); }
 }
 
-/* --- Layer 1: ฝุ่นดาวละเอียด --- */
-body::before {
+/* --- Layer 1: ฝุ่นดาวละเอียด (เยอะที่สุด/ไกลสุด) --- */
+html::before {
   content: " ";
   position: absolute;
   top: 0; left: 0;
-  width: 2px; height: 2px;
-  border-radius: 50%;
+  width: 1px; height: 1px;
   background: transparent;
-  z-index: -1;
-  opacity: 0.6;
+  z-index: -2;
+  opacity: 0.5;
   box-shadow: 
     124px 543px #FFF, 1532px 423px #FFF, 243px 1231px #FFF, 876px 231px #FFF,
     1432px 876px #FFF, 543px 123px #FFF, 987px 1543px #FFF, 234px 876px #FFF,
@@ -76,17 +76,56 @@ body::before {
     600px 1400px #FFF, 900px 600px #FFF, 1200px 1100px #FFF, 1500px 1600px #FFF,
     1124px 1543px #FFF, 532px 1423px #FFF, 1243px 231px #FFF, 1876px 1231px #FFF,
     432px 1876px #FFF, 1543px 1123px #FFF, 1987px 543px #FFF, 1234px 1876px #FFF,
-    654px 1321px #FFF, 1876px 432px #FFF, 1123px 1654px #FFF, 876px 1987px #FFF;
+    654px 1321px #FFF, 1876px 432px #FFF, 1123px 1654px #FFF, 876px 1987px #FFF,
+    150px 350px #FFF, 850px 150px #FFF, 1350px 950px #FFF, 1950px 1450px #FFF,
+    450px 1150px #FFF, 1750px 550px #FFF, 50px 1950px #FFF, 1650px 50px #FFF,
+    241px 342px #FFF, 1231px 543px #FFF, 543px 1654px #FFF, 1982px 234px #FFF,
+    765px 123px #FFF, 123px 987px #FFF, 1876px 1432px #FFF, 321px 654px #FFF,
+    987px 321px #FFF, 1543px 1765px #FFF, 234px 1234px #FFF, 1654px 876px #FFF,
+    654px 231px #FFF, 1321px 987px #FFF, 876px 1543px #FFF, 432px 543px #FFF,
+    1987px 1123px #FFF, 1123px 1876px #FFF, 543px 321px #FFF, 1765px 1321px #FFF,
+    321px 1654px #FFF, 1432px 654px #FFF, 765px 1987px #FFF, 1234px 432px #FFF,
+    1654px 123px #FFF, 987px 1543px #FFF, 231px 876px #FFF, 1876px 234px #FFF,
+    543px 1432px #FFF, 1098px 543px #FFF, 132px 1765px #FFF, 1543px 987px #FFF;
   animation: animStar 200s linear infinite;
 }
 
-/* --- Layer 2: ดวงดาวสว่าง --- */
+/* --- Layer 2: ดาวขนาดกลาง (ระยะกลาง) --- */
+body::before {
+  content: " ";
+  position: absolute;
+  top: 0; left: 0;
+  width: 2px; height: 2px;
+  background: transparent;
+  z-index: -1;
+  opacity: 0.7;
+  box-shadow: 
+    124px 543px #FFF, 1532px 423px #FFF, 243px 1231px #FFF, 876px 231px #FFF,
+    1432px 876px #FFF, 543px 123px #FFF, 987px 1543px #FFF, 234px 876px #FFF,
+    1654px 321px #FFF, 876px 1432px #FFF, 123px 654px #FFF, 1876px 987px #FFF,
+    432px 1765px #FFF, 1543px 234px #FFF, 765px 987px #FFF, 1234px 543px #FFF,
+    321px 1876px #FFF, 1765px 432px #FFF, 987px 123px #FFF, 654px 1543px #FFF,
+    1432px 765px #FFF, 231px 1234px #FFF, 1876px 321px #FFF, 543px 1765px #FFF,
+    1098px 654px #FFF, 876px 123px #FFF, 132px 1543px #FFF, 1654px 876px #FFF,
+    432px 231px #FFF, 1543px 1098px #FFF, 987px 432px #FFF, 234px 1765px #FFF,
+    50px 800px #FFF, 300px 200px #FFF, 1100px 900px #FFF, 1800px 100px #FFF,
+    600px 1400px #FFF, 900px 600px #FFF, 1200px 1100px #FFF, 1500px 1600px #FFF,
+    1124px 1543px #FFF, 532px 1423px #FFF, 1243px 231px #FFF, 1876px 1231px #FFF,
+    432px 1876px #FFF, 1543px 1123px #FFF, 1987px 543px #FFF, 1234px 1876px #FFF,
+    654px 1321px #FFF, 1876px 432px #FFF, 1123px 1654px #FFF, 876px 1987px #FFF,
+    180px 420px #FFF, 920px 220px #FFF, 1420px 1020px #FFF, 1920px 1520px #FFF,
+    520px 1220px #FFF, 1720px 620px #FFF, 120px 1920px #FFF, 1620px 120px #FFF,
+    350px 1850px #FFF, 850px 750px #FFF, 1350px 250px #FFF, 1950px 1350px #FFF,
+    150px 950px #FFF, 650px 1650px #FFF, 1150px 450px #FFF, 1550px 850px #FFF;
+  animation: animStar 150s linear infinite;
+}
+
+/* --- Layer 3: ดาวสว่างดวงใหญ่ (ใกล้สุด/น้อยสุด) --- */
 body::after {
   content: " ";
   position: absolute;
   top: 0; left: 0;
   width: 3px; height: 3px;
-  border-radius: 50%;
   background: transparent;
   z-index: -1;
   opacity: 0.9;
@@ -95,48 +134,46 @@ body::after {
     876px 1543px #FFF, 432px 765px #FFF, 1543px 234px #FFF, 987px 1432px #FFF,
     123px 1876px #FFF, 1654px 543px #FFF, 321px 1098px #FFF,
     200px 900px #FFF, 1400px 300px #FFF, 700px 1200px #FFF,
-    900px 100px #FFF, 100px 1700px #FFF, 1600px 600px #FFF;
-  animation: animStar 120s linear infinite;
+    900px 100px #FFF, 100px 1700px #FFF, 1600px 600px #FFF,
+    450px 300px #FFF, 1150px 800px #FFF, 1850px 1300px #FFF,
+    250px 1500px #FFF, 950px 500px #FFF, 1650px 1100px #FFF,
+    50px 100px #FFF, 750px 1900px #FFF, 1450px 400px #FFF, 1950px 900px #FFF;
+  animation: animStar 100s linear infinite;
 }
 
 /* =========================================
    🛠 UTILITIES & UI
    ========================================= */
 
-/* 🔥 GLOBAL SCROLLBAR (เปลี่ยนทั้งเว็บให้สวย) */
+/* 🔥 GLOBAL SCROLLBAR */
 ::-webkit-scrollbar {
-  width: 8px; /* ความกว้างแนวตั้ง */
-  height: 8px; /* ความสูงแนวนอน */
+  width: 8px;
+  height: 8px;
 }
 
-/* ราง Scrollbar (พื้นหลัง) ให้ใสเห็นดาว */
 ::-webkit-scrollbar-track {
   background: transparent; 
 }
 
-/* ตัวเลื่อน (Thumb) สีขาวจางๆ */
 ::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.15); 
-  border-radius: 10px; /* ทำให้มน */
+  border-radius: 10px;
 }
 
-/* ตอนเอาเมาส์ชี้ */
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.3); 
 }
 
-/* (Optional) สำหรับ Firefox */
 * {
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
 }
 
-/* Class พิเศษถ้าอยากได้อันเล็กกว่าปกติ (เช่นในแชท) */
 .custom-scrollbar::-webkit-scrollbar {
   width: 6px;
 }
 
-/* แก้ Input Autofill ไม่ให้เป็นสีฟ้า */
+/* แก้ Input Autofill */
 input:-webkit-autofill,
 input:-webkit-autofill:hover, 
 input:-webkit-autofill:focus, 
@@ -146,7 +183,7 @@ input:-webkit-autofill:active{
     transition: background-color 5000s ease-in-out 0s;
 }
 
-/* Animation อื่นๆ */
+/* Animations */
 @keyframes float {
   0% { transform: translateY(0px); }
   50% { transform: translateY(-10px); }
