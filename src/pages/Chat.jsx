@@ -76,7 +76,7 @@ export default function Chat() {
     if (channelRef.current) supabase.removeChannel(channelRef.current);
   };
 
-  // 🔥 ด่านตรวจสุดท้าย: เช็คว่าต้องไปหน้า Review หรือหน้าขอบคุณ
+  // 🔥 ฟังก์ชันจบแชทพร้อมเช็คการโดนรายงาน
   const finalExit = async () => {
     if (isFinished.current) return;
     isFinished.current = true; 
@@ -85,7 +85,7 @@ export default function Chat() {
     setShowConfirmEnd(false);
     setShowDisconnectWarning(false);
 
-    // 🕵️ เช็คว่ามี Report ที่เกี่ยวกับเราในห้องนี้ไหม (ไม่ว่าเราจะแจ้งเขา หรือเขาแจ้งเรา)
+    // เช็คว่ามี Report ที่เกี่ยวข้องกับเราหรือไม่ในห้องนี้
     const { data: report } = await supabase
       .from('reports')
       .select('reporter_id, reported_id')
@@ -94,11 +94,11 @@ export default function Chat() {
       .maybeSingle();
 
     if (isTalker && !report) {
-        // เฉพาะ Talker ที่ "ไม่มีประวัติการแจ้งความ" ในแชทนี้เท่านั้นถึงจะได้รีวิว
+        // เฉพาะ Talker ที่ไม่โดนรายงานถึงจะได้เห็นหน้า Rating
         setShowRating(true); 
     } else {
-        // ถ้าเป็น Listener หรือ มีการ Report เกิดขึ้น ดีดไปหน้าขอบคุณทันที
-        const targetPage = isTalker ? '/thank-you-talker' : '/thank-you-listener';
+        // ถ้าโดนรายงาน หรือเป็น Listener ให้ส่งไปหน้าขอบคุณที่ถูกต้องตามบทบาทตัวเอง
+        const targetPage = isTalker ? '/thank-you-talker' : '/thank-you-listener'; 
         navigate(targetPage, { replace: true });
     }
   };
@@ -145,7 +145,8 @@ export default function Chat() {
       })
       .on('presence', { event: 'sync' }, () => {
         const newState = channelRef.current.presenceState();
-        setIsPartnerOnline(Object.keys(newState).includes(targetPartnerId));
+        const onlineUsers = Object.keys(newState);
+        setIsPartnerOnline(onlineUsers.includes(targetPartnerId));
       })
       .on('presence', { event: 'leave' }, ({ key }) => {
          if (key === targetPartnerId) {
@@ -154,7 +155,7 @@ export default function Chat() {
          }
       })
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `match_id=eq.${matchId}` }, (payload) => {
-         if (payload.new.content === '###END###') finalExit(); // ไม่ต้องใส่ Parameter แล้ว
+         if (payload.new.content === '###END###') finalExit();
          else if (payload.new.sender_id !== user.id) {
              fetchMessages();
              playNotification(); 
@@ -163,7 +164,11 @@ export default function Chat() {
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'matches', filter: `id=eq.${matchId}` }, (payload) => {
          if (payload.new.is_active === false) finalExit();
       })
-      .subscribe();
+      .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          await channelRef.current.track({ user_id: user.id, online_at: new Date().toISOString() });
+        }
+      });
 
       intervalRef.current = setInterval(async () => {
           if (isFinished.current) return;
@@ -198,19 +203,14 @@ export default function Chat() {
     let finalReason = reportReason;
     if (reportReason === 'อื่นๆ' && !otherReasonText.trim()) return alert("ระบุรายละเอียดเพิ่ม");
     if (reportReason === 'อื่นๆ') finalReason = `อื่นๆ: ${otherReasonText}`;
-    
-    if (!confirm("ยืนยันรายงาน? ระบบจะดีดคุณออกทันที")) return;
+    if (!confirm("ยืนยันรายงาน? ระบบจะจบการสนทนาทันที")) return;
 
     try {
         await supabase.from('reports').insert({ 
             reporter_id: userId, reported_id: partnerId, reason: finalReason, chat_evidence: messages, status: 'pending' 
         });
-        
-        // ส่งสัญญาณจบแชท
         await supabase.from('messages').insert([{ match_id: matchId, sender_id: userId, content: '###END###' }]);
         await supabase.from('matches').update({ is_active: false }).eq('id', matchId);
-        
-        // ดีดตัวเองออกทันที
         finalExit();
     } catch (err) { alert(err.message); }
   };
@@ -223,7 +223,7 @@ export default function Chat() {
 
   if (showReportModal) return (
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" style={{ height: `${viewportHeight}px` }}>
-        <div className="bg-soulis-800 border border-soulis-600 p-6 rounded-2xl w-full max-w-sm animate-float flex flex-col max-h-[90%]">
+        <div className="bg-soulis-800 border border-soulis-600 p-6 rounded-2xl w-full max-w-sm flex flex-col max-h-[90%]">
           <div className="flex justify-between items-center mb-4 border-b border-white/10 pb-4">
             <h3 className="text-xl font-bold text-white flex items-center gap-2"><Flag className="text-red-500" /> รายงานผู้ใช้</h3>
             <button onClick={() => setShowReportModal(false)} className="text-gray-400 hover:text-white"><X /></button>
@@ -233,28 +233,28 @@ export default function Chat() {
               <button key={r} onClick={() => setReportReason(r)} className={`w-full text-left px-4 py-2.5 rounded-lg text-sm transition ${reportReason === r ? 'bg-red-600 text-white' : 'bg-white/5 text-gray-300 hover:bg-white/10'}`}>{r}</button>
             ))}
             {reportReason === 'อื่นๆ' && (
-                <div className="pt-2 animate-fade-in">
+                <div className="pt-2">
                     <textarea className="w-full bg-black/30 border border-red-500/50 rounded-lg p-3 text-white text-sm focus:border-red-400 outline-none resize-none" rows="3" placeholder="ระบุรายละเอียด..." value={otherReasonText} onChange={(e) => setOtherReasonText(e.target.value)} />
                 </div>
             )}
           </div>
-          <button onClick={handleSubmitReport} disabled={!reportReason} className="w-full bg-red-600 hover:bg-red-700 disabled:bg-gray-600 text-white py-3 rounded-lg font-bold transition shadow-lg mt-auto">ส่งรายงาน</button>
+          <button onClick={handleSubmitReport} disabled={!reportReason} className="w-full bg-red-600 hover:bg-red-700 text-white py-3 rounded-lg font-bold transition mt-auto">ส่งรายงาน</button>
         </div>
       </div>
   );
 
   if (showRating) return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-soulis-900 p-4" style={{ height: `${viewportHeight}px` }}>
-        <div className="bg-white/10 backdrop-blur-xl border border-white/20 p-8 rounded-3xl shadow-2xl w-full max-w-md text-center animate-float">
+        <div className="bg-white/10 backdrop-blur-xl border border-white/20 p-8 rounded-3xl shadow-2xl w-full max-w-md text-center">
           <h2 className="text-2xl font-bold text-white mb-4">จบการสนทนาแล้ว</h2>
           <div className="flex justify-center gap-2 mb-6">
             {[...Array(10)].map((_, i) => (
-              <Star key={i} className={`cursor-pointer w-8 h-8 transition hover:scale-110 ${i < rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-600'}`} onClick={() => setRating(i + 1)} />
+              <Star key={i} className={`cursor-pointer w-8 h-8 transition ${i < rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-600'}`} onClick={() => setRating(i + 1)} />
             ))}
           </div>
           <p className="text-white mb-4 font-bold text-xl">{rating} / 10</p>
           <textarea className="w-full bg-black/30 text-white border border-white/10 rounded-xl p-4 mb-4 focus:border-soulis-500 outline-none" placeholder="เขียนความประทับใจ..." value={comment} onChange={(e) => setComment(e.target.value)} />
-          <button onClick={submitReview} className="w-full bg-soulis-600 hover:bg-soulis-500 text-white py-3 rounded-xl font-bold shadow-lg transition">ส่งรีวิว</button>
+          <button onClick={submitReview} className="w-full bg-soulis-600 hover:bg-soulis-500 text-white py-3 rounded-xl font-bold transition">ส่งรีวิว</button>
         </div>
       </div>
   );
@@ -264,7 +264,7 @@ export default function Chat() {
       <Helmet><title>ห้องสนทนา - Soulis</title><meta name="robots" content="noindex" /></Helmet>
       <header className="flex-none h-16 bg-soulis-900/80 backdrop-blur-md px-4 shadow flex justify-between items-center z-10 border-b border-white/5">
         <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-soulis-500 to-soulis-700 rounded-full flex items-center justify-center shadow-md relative">
+            <div className="w-10 h-10 bg-soulis-700 rounded-full flex items-center justify-center relative">
               <User className="text-white w-5 h-5" />
               <div className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-soulis-900 ${isPartnerOnline ? 'bg-green-500' : 'bg-gray-500'}`}></div>
             </div>
@@ -296,7 +296,7 @@ export default function Chat() {
       </form>
       {showDisconnectWarning && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-            <div className="bg-soulis-800 border border-red-500/50 p-6 rounded-2xl w-full max-w-sm text-center">
+            <div className="bg-soulis-800 border border-red-500/50 p-6 rounded-2xl w-full max-w-sm text-center shadow-2xl">
                 <div className="w-14 h-14 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-4"><WifiOff className="text-red-500" size={28} /></div>
                 <h3 className="text-xl font-bold text-white mb-2">{partnerRole} หลุดไปแล้ว</h3>
                 <div className="flex gap-3 mt-6"><button onClick={() => setShowDisconnectWarning(false)} className="flex-1 bg-white/5 text-white py-2.5 rounded-xl border border-white/10">รออีกนิด</button><button onClick={confirmEndChat} className="flex-1 bg-red-600 text-white py-2.5 rounded-xl font-bold">ออกเลย</button></div>
