@@ -95,7 +95,7 @@ export default function About() {
                         className="inline-flex items-center gap-2 bg-[#1877F2]/10 border border-[#1877F2]/30 px-5 py-2.5 rounded-full hover:bg-[#1877F2]/20 hover:scale-105 transition active:scale-95 cursor-pointer group"
                     >
                         <Facebook size={18} className="text-[#1877F2] group-hover:text-white transition"/>
-                        <span className="text-sm text-[#1877F2] group-hover:text-white transition font-medium">ติดตามเรา</span>
+                        <span className="text-sm text-[#1877F2] group-hover:text-white transition font-medium">ติดต่อเรา</span>
                     </a>
                 </div>
 
