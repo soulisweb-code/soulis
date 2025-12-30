@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { supabase } from '../supabaseClient';
-import { Sparkles, X, Shield, ArrowRight, AlertCircle } from 'lucide-react'; // เพิ่ม AlertCircle
+import { Sparkles, X, Shield, ArrowRight } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
 
 export default function Login() {
@@ -103,23 +103,7 @@ export default function Login() {
             )}
           </button>
 
-          {/* Footer Text (ลิงก์กดได้แล้ว!) */}
-          <p className="text-xs text-gray-500 mt-2">
-            การเข้าสู่ระบบถือว่าท่านยอมรับ <br />
-            <span
-              onClick={handleStartLogin}
-              className="text-soulis-400 underline cursor-pointer hover:text-white transition"
-            >
-              ข้อตกลงการใช้งาน
-            </span>
-            {' '}และ{' '}
-            <span
-              onClick={handleStartLogin}
-              className="text-soulis-400 underline cursor-pointer hover:text-white transition"
-            >
-              นโยบายความเป็นส่วนตัว
-            </span>
-          </p>
+          {/* ❌ เอา Footer Text ออกแล้ว ตามที่ขอครับ */}
 
         </div>
       </div>
@@ -140,16 +124,20 @@ export default function Login() {
               <button onClick={() => setShowPolicyModal(false)} className="text-gray-400 hover:text-white transition bg-white/5 p-2 rounded-full hover:bg-white/10"><X size={20} /></button>
             </div>
 
-            {/* Modal Content - แก้ไขข้อความตรงนี้ */}
+            {/* Modal Content */}
             <div className="text-sm text-gray-300 space-y-4 leading-relaxed bg-black/20 p-4 rounded-xl border border-white/5 max-h-[40vh] overflow-y-auto custom-scrollbar">
               <p>ยินดีต้อนรับสู่ <strong>Soulis</strong> พื้นที่ปลอดภัยสำหรับการระบายและรับฟัง</p>
               <ul className="list-disc pl-5 space-y-2 text-gray-400">
                 <li>เราเก็บข้อมูล <strong>ชื่อผู้ใช้ (Google Name)</strong> และ <strong>อีเมล</strong> เพื่อการยืนยันตัวตนเท่านั้น</li>
                 <li>ข้อมูลการสนทนาเป็นแบบกึ่งนิรนาม (Semi-Anonymous)</li>
                 
-                {/* 🔥 แก้ไขกฎการใช้งาน */}
                 <li>ท่านสามารถ <span className="text-white font-bold">ระบายได้เต็มที่</span> (ไม่จำเป็นต้องใช้คำสุภาพ) แต่ต้อง <span className="text-soulis-300 font-bold">ให้เกียรติคู่สนทนา</span></li>
                 <li><span className="text-red-400 font-bold">ห้าม</span> คุกคาม ข่มขู่ หรือทำให้ผู้อื่นรู้สึกไม่ปลอดภัย หากถูกรายงาน (Report) บัญชีอาจถูกระงับถาวร</li>
+                
+                {/* 🔥 เพิ่มข้อความนี้เข้าไปครับ */}
+                <li className="text-xs text-gray-500 pt-2 border-t border-white/5 mt-2">
+                    ท่านสามารถอ่านนโยบายความเป็นส่วนตัวและข้อตกลงการใช้งานฉบับเต็มได้ในเว็บไซต์หลังจากเข้าสู่ระบบ
+                </li>
               </ul>
               <p className="text-center text-soulis-300 italic pt-2">"ช่วยกันรักษาพื้นที่นี้ ให้เป็นเซฟโซนของทุกคนนะคะ"</p>
             </div>
