@@ -1,15 +1,15 @@
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, Heart, Sparkles, Users, Mail, Facebook } from 'lucide-react';
+import { ChevronLeft, Heart, Sparkles, Users, Mail, Facebook, User } from 'lucide-react'; // เพิ่ม Icon User
 import { Helmet } from 'react-helmet-async';
 
 export default function About() {
   const navigate = useNavigate();
 
   return (
-    // 🔥 HERO FIX: Layout สำหรับการเลื่อน
+    // 🔥 Layout Fix: Layout สำหรับการเลื่อน
     <div className="fixed inset-0 z-10 bg-transparent h-[100dvh] w-full overflow-y-auto overflow-x-hidden font-sans">
       
-      {/* ✅ ส่วน SEO: เพิ่ม Helmet ตรงนี้ เพื่อบอก Google ว่าหน้านี้คือหน้า "เกี่ยวกับเรา" */}
+      {/* ✅ ส่วน SEO */}
       <Helmet>
         <title>เกี่ยวกับเรา - Soulis พื้นที่ปลอดภัยสำหรับใจคุณ</title>
         <meta 
@@ -17,17 +17,15 @@ export default function About() {
           content="ทำความรู้จัก Soulis แพลตฟอร์มระบายความในใจแบบไม่ระบุตัวตน เราคือพื้นที่ปลอดภัยที่สร้างขึ้นเพื่อให้ทุกคนมีเพื่อนรับฟังโดยไม่ตัดสิน" 
         />
         <link rel="canonical" href="https://soulis.in.th/about" />
-
-        {/* Social Media Tags (เวลาแชร์ลิงก์หน้านี้) */}
         <meta property="og:title" content="เกี่ยวกับเรา - Soulis" />
         <meta property="og:description" content="ทำความรู้จัก Soulis แพลตฟอร์มระบายความในใจแบบไม่ระบุตัวตน" />
         <meta property="og:url" content="https://soulis.in.th/about" />
       </Helmet>
       
-      {/* Wrapper: ใช้ min-h-full เพื่อยืดเนื้อหา และ pt/pb เพื่อกันขอบบนล่าง */}
+      {/* Wrapper */}
       <div className="min-h-full w-full flex flex-col items-center justify-center p-6 pt-24 pb-32">
 
-        {/* Background Elements (Fixed เพื่อความนิ่ง) */}
+        {/* Background Elements */}
         <div className="fixed top-[-10%] left-1/2 transform -translate-x-1/2 w-[800px] h-[500px] bg-soulis-600/20 rounded-full blur-[120px] pointer-events-none -z-10"></div>
 
         {/* Main Card */}
@@ -46,6 +44,28 @@ export default function About() {
                 </p>
             </div>
 
+            {/* 🔥 NEW SECTION: Soulis คือใคร? */}
+            <div className="bg-white/5 rounded-2xl p-6 md:p-8 mb-10 border border-white/5 text-center shadow-inner">
+                <h2 className="text-xl md:text-2xl font-bold text-white mb-4 flex items-center justify-center gap-2">
+                    <User className="text-soulis-400" size={24} /> Soulis คือใคร?
+                </h2>
+                <div className="text-gray-300 space-y-4 leading-relaxed text-sm md:text-base">
+                    <p>
+                        เว็บไซต์นี้จัดทำและพัฒนาโดย <strong>คนธรรมดาเพียงคนเดียว</strong> ที่มีความฝันเล็กๆ 
+                        อยากเปลี่ยนโลกออนไลน์ให้น่าอยู่ขึ้น
+                    </p>
+                    <p>
+                        เราตั้งใจสร้างพื้นที่แห่งนี้ให้เป็น <strong>"พื้นที่ปลอดภัย" (Safe Space)</strong> ของทุกคน 
+                        เพื่อให้ใครก็ตามที่กำลังเหนื่อยล้า ได้เข้ามา <em>ระบายความในใจ</em> หรือ <em>รับฟังผู้อื่น</em> 
+                        โดยไม่ต้องสวมหน้ากากและไม่ต้องกลัวการถูกตัดสิน
+                    </p>
+                    <p className="font-medium text-soulis-200">
+                        "เราเชื่อว่าการรับฟังด้วยหัวใจ คือจุดเริ่มต้นของการสร้างสังคมที่ดี"
+                    </p>
+                </div>
+            </div>
+
+            {/* Feature Cards */}
             <div className="grid md:grid-cols-3 gap-6 text-center">
                 <div className="bg-white/5 p-6 rounded-2xl border border-white/5 hover:border-soulis-500/30 transition group">
                     <div className="bg-rose-500/20 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4 text-rose-300 group-hover:scale-110 transition-transform">
@@ -72,22 +92,20 @@ export default function About() {
                 </div>
             </div>
 
+            {/* Footer Text & Contact */}
             <div className="mt-12 text-center border-t border-white/10 pt-8">
                 <p className="text-gray-400 text-sm leading-relaxed max-w-xl mx-auto mb-8">
-                    Soulis เกิดขึ้นจากความตั้งใจที่อยากให้ทุกคนมีพื้นที่เล็กๆ ไว้พักใจ 
-                    ในวันที่โลกภายนอกอาจจะโหดร้าย เราหวังว่าที่นี่จะเป็นดวงดาวดวงน้อยๆ 
-                    ที่ช่วยโอบกอดคุณไว้นะคะ 💜
+                    <strong>ขอขอบคุณจากใจจริง</strong> สำหรับทุกคนที่แวะเวียนเข้ามาใช้งาน 
+                    และร่วมเป็นส่วนหนึ่งในจักรวาลเล็กๆ แห่งนี้ หวังว่า Soulis จะช่วยโอบกอดและฮีลใจคุณได้ไม่มากก็น้อยนะคะ 💜
                 </p>
 
-                {/* ส่วนช่องทางติดต่อ (Email & Facebook) */}
+                {/* Contact Buttons */}
                 <div className="flex flex-wrap items-center justify-center gap-3">
-                    {/* ปุ่มอีเมล */}
                     <a href="mailto:soulis.web@gmail.com" className="inline-flex items-center gap-2 bg-white/5 border border-white/10 px-5 py-2.5 rounded-full hover:bg-white/10 hover:scale-105 transition active:scale-95 cursor-pointer group">
                         <Mail size={18} className="text-soulis-300 group-hover:text-white transition"/>
                         <span className="text-sm text-gray-300 group-hover:text-white transition">ติดต่อทางอีเมล</span>
                     </a>
 
-                    {/* ปุ่ม Facebook (เพิ่มใหม่) */}
                     <a 
                         href="https://www.facebook.com/profile.php?id=61585944024410" 
                         target="_blank" 
