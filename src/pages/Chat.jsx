@@ -18,7 +18,6 @@ export default function Chat() {
   const [partnerRole, setPartnerRole] = useState('');
   const [partnerRating, setPartnerRating] = useState(null);
 
-  // 🔥 ใช้ Ref เพื่อป้องกันปัญหา Logic สลับหน้าขอบคุณ (State Closure)
   const amITalkerRef = useRef(false);
   const currentUserIdRef = useRef(null);
 
@@ -80,17 +79,22 @@ export default function Chat() {
     if (channelRef.current) supabase.removeChannel(channelRef.current);
   };
 
-  // 🔥 ฟังก์ชันจบแชท: เช็ค Path อย่างละเอียดที่สุด
+  // 🔥 ฟังก์ชันจบแชท: ล็อคไม่ให้คนโดนรีพอร์ตเข้าหน้า Review ได้เด็ดขาด
   const finalExit = async () => {
     if (isFinished.current) return;
     isFinished.current = true; 
     killSystem();
     sessionStorage.removeItem('soulis_session');
-    
+    setShowConfirmEnd(false);
+    setShowDisconnectWarning(false);
+
     const myId = currentUserIdRef.current;
     const isTalkerMode = amITalkerRef.current;
 
-    // 🕵️ เช็ครายงานในห้องนี้
+    // 🕵️ หน่วงเวลาเล็กน้อย (500ms) เพื่อให้แน่ใจว่า Report จากอีกฝั่งบันทึกลง DB เสร็จแล้ว
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    // เช็คประวัติการแจ้งความในห้องนี้
     const { data: report } = await supabase
       .from('reports')
       .select('id')
@@ -99,10 +103,10 @@ export default function Chat() {
       .maybeSingle();
 
     if (isTalkerMode && !report) {
-        // เฉพาะผู้ระบายที่ "ไม่โดนรายงาน" เท่านั้นที่ไปหน้า Rating
+        // เฉพาะ Talker ที่ใสสะอาดจริงๆ ถึงจะเห็นหน้า Rating
         setShowRating(true); 
     } else {
-        // แยกหน้าขอบคุณชัดเจนตามบทบาท (บัคเก่าคือพาไปหน้า listener ตลอด)
+        // คนแจ้ง, คนโดนแจ้ง, หรือ Listener ไปหน้าขอบคุณทันที
         const destination = isTalkerMode ? '/thank-you-talker' : '/thank-you-listener';
         navigate(destination, { replace: true });
     }
@@ -134,7 +138,7 @@ export default function Chat() {
       const targetPartnerId = userIsTalker ? match.listener_id : match.talker_id;
       
       setIsTalker(userIsTalker);
-      amITalkerRef.current = userIsTalker; // เก็บใส่ Ref เพื่อกันบัคสลับหน้า
+      amITalkerRef.current = userIsTalker; 
       setPartnerId(targetPartnerId);
       setPartnerRole(userIsTalker ? 'ผู้รับฟัง' : 'ผู้ระบาย');
 
@@ -213,11 +217,18 @@ export default function Chat() {
     if (!confirm("ยืนยันรายงาน? ระบบจะจบการสนทนาทันที")) return;
 
     try {
+        // 1. บันทึก Report ลง DB ก่อนทำอย่างอื่น
         await supabase.from('reports').insert({ 
             reporter_id: userId, reported_id: partnerId, reason: finalReason, chat_evidence: messages, status: 'pending' 
         });
+        
+        // 2. ส่ง ###END### เพื่อบอกให้อีกฝั่งออก
         await supabase.from('messages').insert([{ match_id: matchId, sender_id: userId, content: '###END###' }]);
+        
+        // 3. ปิดแมตช์
         await supabase.from('matches').update({ is_active: false }).eq('id', matchId);
+        
+        // 4. ดีดตัวเองออก
         finalExit();
     } catch (err) { alert(err.message); }
   };
@@ -228,6 +239,7 @@ export default function Chat() {
     navigate('/thank-you-talker', { replace: true });
   };
 
+  // UI ส่วนที่เหลือเหมือนเดิม...
   if (showReportModal) return (
       <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" style={{ height: `${viewportHeight}px` }}>
         <div className="bg-soulis-800 border border-soulis-600 p-6 rounded-2xl w-full max-w-sm flex flex-col max-h-[90%] shadow-2xl">
@@ -299,11 +311,11 @@ export default function Chat() {
       </div>
       <form onSubmit={sendMessage} className="flex-none p-3 bg-soulis-900/95 backdrop-blur-xl border-t border-white/5 flex gap-2">
         <input type="text" value={newMessage} onChange={(e) => setNewMessage(e.target.value)} className="flex-1 bg-white/5 text-white border border-white/10 rounded-full px-5 py-3 focus:outline-none focus:border-soulis-500 transition" placeholder="พิมพ์ข้อความ..." />
-        <button type="submit" disabled={!newMessage.trim()} className="bg-soulis-500 text-white p-3 rounded-full"><Send size={20}/></button>
+        <button type="submit" disabled={!newMessage.trim()} className="bg-soulis-500 text-white p-3 rounded-full shadow-lg"><Send size={20}/></button>
       </form>
       {showDisconnectWarning && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-            <div className="bg-soulis-800 border border-red-500/50 p-6 rounded-2xl w-full max-w-sm text-center">
+            <div className="bg-soulis-800 border border-red-500/50 p-6 rounded-2xl w-full max-w-sm text-center shadow-2xl">
                 <div className="w-14 h-14 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-4"><WifiOff className="text-red-500" size={28} /></div>
                 <h3 className="text-xl font-bold text-white mb-2">{partnerRole} หลุดไปแล้ว</h3>
                 <div className="flex gap-3 mt-6"><button onClick={() => setShowDisconnectWarning(false)} className="flex-1 bg-white/5 text-white py-2.5 rounded-xl border border-white/10">รออีกนิด</button><button onClick={confirmEndChat} className="flex-1 bg-red-600 text-white py-2.5 rounded-xl font-bold">ออกเลย</button></div>
