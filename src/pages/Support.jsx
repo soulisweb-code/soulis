@@ -37,12 +37,12 @@ export default function Support() {
           name="description" 
           content="ร่วมสนับสนุนทีมงานผู้พัฒนา Soulis เพื่อให้เราได้พัฒนาและดูแลรักษาพื้นที่ปลอดภัยสำหรับระบายความในใจแห่งนี้ต่อไป" 
         />
-        <link rel="canonical" href="https://soulis.vercel.app/support" />
+        <link rel="canonical" href="https://soulis.in.th/support" />
         
         {/* Social Media Tags */}
         <meta property="og:title" content="สนับสนุนผู้พัฒนา - Soulis" />
         <meta property="og:description" content="ร่วมเป็นส่วนหนึ่งในการขับเคลื่อนสังคมแห่งการรับฟัง" />
-        <meta property="og:url" content="https://soulis.vercel.app/support" />
+        <meta property="og:url" content="https://soulis.in.th//support" />
       </Helmet>
 
       {/* Wrapper ข้างใน: ใช้ min-h-full และ padding เยอะๆ */}

@@ -42,12 +42,12 @@ export default function Login() {
           name="description"
           content="เข้าสู่ระบบ Soulis เว็บไซต์ระบายความในใจและหาเพื่อนรับฟังแบบไม่ระบุตัวตน ปลอดภัย เป็นกันเอง และใช้งานฟรี"
         />
-        <link rel="canonical" href="https://soulis.vercel.app/" />
+        <link rel="canonical" href="https://soulis.in.th/" />
 
         {/* Open Graph สำหรับเวลาแชร์ลง Facebook/Line */}
         <meta property="og:title" content="Soulis - พื้นที่ปลอดภัยสำหรับใจคุณ" />
         <meta property="og:description" content="มาคุยกันนะ... ที่นี่มีคนพร้อมรับฟังคุณเสมอ 💜" />
-        <meta property="og:url" content="https://soulis.vercel.app/" />
+        <meta property="og:url" content="https://soulis.in.th/" />
         <meta property="og:type" content="website" />
       </Helmet>
 

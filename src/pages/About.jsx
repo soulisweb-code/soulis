@@ -16,12 +16,12 @@ export default function About() {
           name="description" 
           content="ทำความรู้จัก Soulis แพลตฟอร์มระบายความในใจแบบไม่ระบุตัวตน เราคือพื้นที่ปลอดภัยที่สร้างขึ้นเพื่อให้ทุกคนมีเพื่อนรับฟังโดยไม่ตัดสิน" 
         />
-        <link rel="canonical" href="https://soulis.vercel.app/about" />
+        <link rel="canonical" href="https://soulis.in.th/about" />
 
         {/* Social Media Tags (เวลาแชร์ลิงก์หน้านี้) */}
         <meta property="og:title" content="เกี่ยวกับเรา - Soulis" />
         <meta property="og:description" content="ทำความรู้จัก Soulis แพลตฟอร์มระบายความในใจแบบไม่ระบุตัวตน" />
-        <meta property="og:url" content="https://soulis.vercel.app/about" />
+        <meta property="og:url" content="https://soulis.in.th/about" />
       </Helmet>
       
       {/* Wrapper: ใช้ min-h-full เพื่อยืดเนื้อหา และ pt/pb เพื่อกันขอบบนล่าง */}

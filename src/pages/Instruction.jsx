@@ -66,12 +66,12 @@ export default function Instruction() {
           name="description" 
           content="อ่านกฎกติกาและมารยาทการใช้งาน Soulis สิ่งที่ควรทำและไม่ควรทำ เพื่อสร้างพื้นที่ปลอดภัยสำหรับทั้งผู้ระบายและผู้รับฟัง" 
         />
-        <link rel="canonical" href="https://soulis.vercel.app/instruction" />
+        <link rel="canonical" href="https://soulis.in.th/instruction" />
         
         {/* Social Media Tags */}
         <meta property="og:title" content="คู่มือการใช้งาน - Soulis" />
         <meta property="og:description" content="อ่านกฎกติกาและมารยาทการใช้งาน Soulis" />
-        <meta property="og:url" content="https://soulis.vercel.app/instruction" />
+        <meta property="og:url" content="https://soulis.in.th/instruction" />
       </Helmet>
 
       <div className="absolute top-[-20%] right-[-20%] w-[500px] h-[500px] bg-soulis-700/20 rounded-full blur-[100px] animate-float"></div>

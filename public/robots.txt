@@ -8,4 +8,4 @@ Disallow: /chat
 Disallow: /profile
 Disallow: /waiting-room
 
-Sitemap: https://soulis.vercel.app/sitemap.xml
+Sitemap: https://soulis.in.th/sitemap.xml

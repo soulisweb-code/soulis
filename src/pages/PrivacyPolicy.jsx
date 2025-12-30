@@ -16,12 +16,12 @@ export default function PrivacyPolicy() {
           name="description" 
           content="อ่านนโยบายความเป็นส่วนตัวของ Soulis ข้อมูลที่เราจัดเก็บ วิธีการใช้งานข้อมูล และมาตรฐานความปลอดภัย เพื่อความสบายใจในการใช้งานพื้นที่ระบายความในใจแห่งนี้" 
         />
-        <link rel="canonical" href="https://soulis.vercel.app/privacy-policy" />
+        <link rel="canonical" href="https://soulis.in.th/privacy-policy" />
         
         {/* Social Media Tags */}
         <meta property="og:title" content="นโยบายความเป็นส่วนตัว - Soulis" />
         <meta property="og:description" content="เราให้ความสำคัญกับความเป็นส่วนตัวและความปลอดภัยของข้อมูลคุณ" />
-        <meta property="og:url" content="https://soulis.vercel.app/privacy-policy" />
+        <meta property="og:url" content="https://soulis.in.th/privacy-policy" />
       </Helmet>
 
       {/* Wrapper: ใช้ min-h-full เพื่อยืดเนื้อหา และ pt/pb เพื่อกันขอบบนล่าง */}
