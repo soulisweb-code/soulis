@@ -30,7 +30,7 @@ export default function Footer() {
         
         <span className="text-white/10">|</span>
         
-        <span className="opacity-50 shrink-0">© 2024 - {new Date().getFullYear()} Soulis</span>
+        <span className="opacity-50 shrink-0">© {new Date().getFullYear()} Soulis</span>
       </div>
     </footer>
   );
