@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, Heart, Sparkles, Users, Mail } from 'lucide-react';
+import { ChevronLeft, Heart, Sparkles, Users, Mail, Facebook } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
 
 export default function About() {
@@ -79,11 +79,26 @@ export default function About() {
                     ที่ช่วยโอบกอดคุณไว้นะคะ 💜
                 </p>
 
-                {/* ส่วนอีเมลติดต่อ */}
-                <a href="mailto:soulis.web@gmail.com" className="inline-flex items-center gap-3 bg-white/5 border border-white/10 px-6 py-3 rounded-full hover:bg-white/10 hover:scale-105 transition active:scale-95 cursor-pointer group">
-                    <Mail size={18} className="text-soulis-300 group-hover:text-white transition"/>
-                    <span className="text-sm text-gray-300 group-hover:text-white transition">ติดต่อเรา: <span className="font-medium underline decoration-soulis-500/50">soulis.web@gmail.com</span></span>
-                </a>
+                {/* ส่วนช่องทางติดต่อ (Email & Facebook) */}
+                <div className="flex flex-wrap items-center justify-center gap-3">
+                    {/* ปุ่มอีเมล */}
+                    <a href="mailto:soulis.web@gmail.com" className="inline-flex items-center gap-2 bg-white/5 border border-white/10 px-5 py-2.5 rounded-full hover:bg-white/10 hover:scale-105 transition active:scale-95 cursor-pointer group">
+                        <Mail size={18} className="text-soulis-300 group-hover:text-white transition"/>
+                        <span className="text-sm text-gray-300 group-hover:text-white transition">ติดต่อทางอีเมล</span>
+                    </a>
+
+                    {/* ปุ่ม Facebook (เพิ่มใหม่) */}
+                    <a 
+                        href="https://www.facebook.com/profile.php?id=61585944024410" 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        className="inline-flex items-center gap-2 bg-[#1877F2]/10 border border-[#1877F2]/30 px-5 py-2.5 rounded-full hover:bg-[#1877F2]/20 hover:scale-105 transition active:scale-95 cursor-pointer group"
+                    >
+                        <Facebook size={18} className="text-[#1877F2] group-hover:text-white transition"/>
+                        <span className="text-sm text-[#1877F2] group-hover:text-white transition font-medium">ติดตามเรา</span>
+                    </a>
+                </div>
+
             </div>
 
         </div>
