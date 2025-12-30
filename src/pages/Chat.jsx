@@ -4,14 +4,14 @@ import { supabase } from '../supabaseClient';
 import { Send, Star, User, AlertTriangle, LogOut, Flag, X } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
 
-// 🔥 1. Import ระบบเสียง
+// Import ระบบเสียง
 import { useSound } from '../context/SoundContext';
 
 export default function Chat() {
   const { matchId } = useParams();
   const navigate = useNavigate();
   
-  // 🔥 2. ดึงฟังก์ชันเล่นเสียงมาใช้
+  // ดึงฟังก์ชันเล่นเสียงมาใช้
   const { playNotification } = useSound();
   
   const [messages, setMessages] = useState([]);
@@ -21,6 +21,9 @@ export default function Chat() {
   const [isTalker, setIsTalker] = useState(false);
   const [partnerRole, setPartnerRole] = useState('');
   const [partnerRating, setPartnerRating] = useState(null);
+
+  // 🔥 State สำหรับเช็กสถานะ Online ของคู่สนทนา
+  const [isPartnerOnline, setIsPartnerOnline] = useState(false);
   
   const [showConfirmEnd, setShowConfirmEnd] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false); 
@@ -32,7 +35,6 @@ export default function Chat() {
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState('');
   
-  // Initialize with window.innerHeight, but prefer visualViewport if available
   const [viewportHeight, setViewportHeight] = useState(
     window.visualViewport ? window.visualViewport.height : window.innerHeight
   );
@@ -42,17 +44,13 @@ export default function Chat() {
   const intervalRef = useRef(null);
   const channelRef = useRef(null);
 
-  // Layout Fix: Visual Viewport (Critical for iOS Safari)
+  // Layout Fix: Visual Viewport
   useEffect(() => {
-    // Handler specifically for viewport resizing (keyboard open/close)
     const handleResize = () => {
       if (window.visualViewport) {
         setViewportHeight(window.visualViewport.height);
-        
-        // Slight delay to ensure layout has repainted before scrolling
         setTimeout(() => {
           messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
-          // Force scroll to bottom on iOS to reveal input if hidden
           window.scrollTo(0, 0); 
         }, 100);
       } else {
@@ -62,8 +60,8 @@ export default function Chat() {
 
     if (window.visualViewport) {
       window.visualViewport.addEventListener('resize', handleResize);
-      window.visualViewport.addEventListener('scroll', handleResize); // Listen to scroll too
-      handleResize(); // Initial call
+      window.visualViewport.addEventListener('scroll', handleResize);
+      handleResize(); 
     } else {
       window.addEventListener('resize', handleResize);
     }
@@ -123,8 +121,10 @@ export default function Chat() {
       }
 
       const userIsTalker = match.talker_id === user.id;
+      const targetPartnerId = userIsTalker ? match.listener_id : match.talker_id; // ตัวแปร Local เพื่อความแม่นยำ
+
       setIsTalker(userIsTalker);
-      setPartnerId(userIsTalker ? match.listener_id : match.talker_id);
+      setPartnerId(targetPartnerId);
       setPartnerRole(userIsTalker ? 'ผู้รับฟัง' : 'ผู้ระบาย');
 
       if (userIsTalker) { 
@@ -138,18 +138,53 @@ export default function Chat() {
       await fetchMessages();
       setTimeout(scrollToBottom, 100);
 
-      channelRef.current = supabase.channel(`room-${matchId}`)
+      // 🔥 ตั้งค่า Realtime Channel พร้อมระบบ Presence (เช็กคนออนไลน์)
+      channelRef.current = supabase.channel(`room-${matchId}`, {
+        config: { 
+          presence: { 
+            key: user.id, // ส่ง ID เราไปบอก Server
+          },
+        },
+      })
+        // 1. เช็กสถานะคนในห้อง (Sync)
+        .on('presence', { event: 'sync' }, () => {
+          const newState = channelRef.current.presenceState();
+          // ดูว่าในห้องมี ID ของ partner อยู่ไหม
+          const isPartnerHere = Object.keys(newState).includes(targetPartnerId);
+          setIsPartnerOnline(isPartnerHere);
+        })
+        // 2. เมื่อมีคนเข้าห้อง (Join)
+        .on('presence', { event: 'join' }, ({ key }) => {
+           if (key === targetPartnerId) {
+             setIsPartnerOnline(true);
+             // playNotification(); // (Optional: อยากให้มีเสียงตอนเพื่อนเข้าก็เปิดบรรทัดนี้)
+           }
+        })
+        // 3. เมื่อมีคนออกจากห้อง/หลุด (Leave)
+        .on('presence', { event: 'leave' }, ({ key }) => {
+           if (key === targetPartnerId) setIsPartnerOnline(false);
+        })
+        // 4. รับข้อความแชท (เหมือนเดิม)
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `match_id=eq.${matchId}` }, (payload) => {
            if (payload.new.content === '###END###') finalExit(userIsTalker);
            else if (payload.new.sender_id !== user.id) {
-               // 🔥 3. ถ้าคนอื่นส่งมา ให้ดึงข้อความและเล่นเสียง
                fetchMessages();
                playNotification(); 
            }
         })
+        // 5. เช็กสถานะห้องปิด (เหมือนเดิม)
         .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'matches', filter: `id=eq.${matchId}` }, (payload) => {
            if (payload.new.is_active === false) finalExit(userIsTalker);
-        }).subscribe();
+        })
+        .subscribe(async (status) => {
+          if (status === 'SUBSCRIBED') {
+            // 🔥 ส่งสัญญาณว่า "ฉันออนไลน์แล้ว"
+            await channelRef.current.track({ 
+              online_at: new Date().toISOString(),
+              user_id: user.id 
+            });
+          }
+        });
 
       intervalRef.current = setInterval(async () => {
           if (isFinished.current) return;
@@ -161,7 +196,7 @@ export default function Chat() {
 
     setupChat();
     return () => { killSystem(); };
-  }, [matchId, navigate]); // playNotification ไม่ต้องใส่ใน dependency array เพื่อป้องกัน re-render วนลูป
+  }, [matchId, navigate]); 
 
   useEffect(() => { if(!isFinished.current) scrollToBottom(); }, [messages]);
 
@@ -265,10 +300,10 @@ export default function Chat() {
         className="fixed inset-0 w-full bg-soulis-900 flex flex-col overflow-hidden"
         style={{ 
           height: `${viewportHeight}px`,
-          position: 'fixed', // Explicitly fixed to viewport
+          position: 'fixed', 
           top: 0, 
           left: 0,
-          touchAction: 'none' // Disable browser gestures that might interfere
+          touchAction: 'none' 
         }} 
     >
       
@@ -279,10 +314,25 @@ export default function Chat() {
 
       <header className="flex-none h-16 bg-soulis-900/80 backdrop-blur-md px-4 shadow flex justify-between items-center z-10 border-b border-white/5">
         <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-soulis-500 to-soulis-700 rounded-full flex items-center justify-center shadow-md"><User className="text-white w-5 h-5" /></div>
+            <div className="w-10 h-10 bg-gradient-to-br from-soulis-500 to-soulis-700 rounded-full flex items-center justify-center shadow-md relative">
+              <User className="text-white w-5 h-5" />
+              {/* จุดเขียวเล็กๆ ที่ Avatar (เสริม) */}
+              <div className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-soulis-900 ${isPartnerOnline ? 'bg-green-500' : 'bg-gray-500'}`}></div>
+            </div>
             <div>
                 <h1 className="font-bold text-white text-base flex items-center gap-2">คุยกับ {partnerRole} {isTalker && partnerRating && <span className="bg-yellow-500/20 text-yellow-300 text-xs px-2 py-0.5 rounded-full border border-yellow-500/30">⭐ {partnerRating}</span>}</h1>
-                <span className="flex h-2 w-2 relative"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span><span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span></span>
+                
+                {/* 🔥 ส่วนแสดงสถานะ Online/Offline ใหม่ */}
+                <div className="flex items-center gap-1.5 mt-0.5">
+                    <span className="relative flex h-2 w-2">
+                      {isPartnerOnline && <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>}
+                      <span className={`relative inline-flex rounded-full h-2 w-2 ${isPartnerOnline ? 'bg-green-500' : 'bg-gray-500'}`}></span>
+                    </span>
+                    <span className={`text-xs ${isPartnerOnline ? 'text-green-400' : 'text-gray-400'}`}>
+                        {isPartnerOnline ? 'Online' : 'Offline'}
+                    </span>
+                </div>
+
             </div>
         </div>
         <div className="flex gap-2">
@@ -312,7 +362,7 @@ export default function Chat() {
 
       {/* Input Bar */}
       <form onSubmit={sendMessage} className="flex-none p-3 bg-soulis-900/95 backdrop-blur-xl border-t border-white/5 flex gap-2"
-            style={{ paddingBottom: 'env(safe-area-inset-bottom)' }} // Extra safety for iPhone X+ home bar
+            style={{ paddingBottom: 'env(safe-area-inset-bottom)' }} 
       >
         <input 
             type="text" 
