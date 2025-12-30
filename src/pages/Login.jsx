@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { supabase } from '../supabaseClient';
-import { Sparkles, X, Shield, ArrowRight } from 'lucide-react';
+import { Sparkles, X, Shield, ArrowRight, AlertCircle } from 'lucide-react'; // เพิ่ม AlertCircle
 import { Helmet } from 'react-helmet-async';
 
 export default function Login() {
@@ -140,14 +140,16 @@ export default function Login() {
               <button onClick={() => setShowPolicyModal(false)} className="text-gray-400 hover:text-white transition bg-white/5 p-2 rounded-full hover:bg-white/10"><X size={20} /></button>
             </div>
 
-            {/* Modal Content */}
+            {/* Modal Content - แก้ไขข้อความตรงนี้ */}
             <div className="text-sm text-gray-300 space-y-4 leading-relaxed bg-black/20 p-4 rounded-xl border border-white/5 max-h-[40vh] overflow-y-auto custom-scrollbar">
               <p>ยินดีต้อนรับสู่ <strong>Soulis</strong> พื้นที่ปลอดภัยสำหรับการระบายและรับฟัง</p>
               <ul className="list-disc pl-5 space-y-2 text-gray-400">
                 <li>เราเก็บข้อมูล <strong>ชื่อผู้ใช้ (Google Name)</strong> และ <strong>อีเมล</strong> เพื่อการยืนยันตัวตนเท่านั้น</li>
                 <li>ข้อมูลการสนทนาเป็นแบบกึ่งนิรนาม (Semi-Anonymous)</li>
-                <li><span className="text-red-400 font-bold">ห้าม</span> ใช้ถ้อยคำหยาบคาย คุกคาม หรือชักชวนไปในทางที่ผิดกฎหมาย</li>
-                <li>หากทำผิดกฎ บัญชีอาจถูกระงับถาวรทันที</li>
+                
+                {/* 🔥 แก้ไขกฎการใช้งาน */}
+                <li>ท่านสามารถ <span className="text-white font-bold">ระบายได้เต็มที่</span> (ไม่จำเป็นต้องใช้คำสุภาพ) แต่ต้อง <span className="text-soulis-300 font-bold">ให้เกียรติคู่สนทนา</span></li>
+                <li><span className="text-red-400 font-bold">ห้าม</span> คุกคาม ข่มขู่ หรือทำให้ผู้อื่นรู้สึกไม่ปลอดภัย หากถูกรายงาน (Report) บัญชีอาจถูกระงับถาวร</li>
               </ul>
               <p className="text-center text-soulis-300 italic pt-2">"ช่วยกันรักษาพื้นที่นี้ ให้เป็นเซฟโซนของทุกคนนะคะ"</p>
             </div>
