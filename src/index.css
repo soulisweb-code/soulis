@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 /* =========================================
-   📱 SAFARI & MOBILE FIXES (สำคัญมาก)
+   📱 SAFARI & MOBILE FIXES
    ========================================= */
 :root {
   --color-soulis-900: #1a0b2e;
@@ -16,7 +16,7 @@ html, body, #root {
   margin: 0;
   padding: 0;
   
-  /* 🔥 KEY FIX: ล็อคไม่ให้ Body เลื่อนเอง (เราจะไปสั่งเลื่อนใน div ข้างในแทน) */
+  /* ล็อคไม่ให้ Body เลื่อนเอง (เราจะไปสั่งเลื่อนใน div ข้างในแทน) */
   overflow: hidden; 
   
   /* ห้ามเด้งดึ๋งเวลาเลื่อนสุดจอ */
@@ -26,7 +26,7 @@ html, body, #root {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* ทำให้การเลื่อนใน iOS ลื่นไหล (Momentum Scrolling) */
+/* ทำให้การเลื่อนใน iOS ลื่นไหล */
 * {
   -webkit-overflow-scrolling: touch;
 }
@@ -103,22 +103,40 @@ body::after {
    🛠 UTILITIES & UI
    ========================================= */
 
-/* Scrollbar สวยๆ */
+/* 🔥 GLOBAL SCROLLBAR (เปลี่ยนทั้งเว็บให้สวย) */
+::-webkit-scrollbar {
+  width: 8px; /* ความกว้างแนวตั้ง */
+  height: 8px; /* ความสูงแนวนอน */
+}
+
+/* ราง Scrollbar (พื้นหลัง) ให้ใสเห็นดาว */
+::-webkit-scrollbar-track {
+  background: transparent; 
+}
+
+/* ตัวเลื่อน (Thumb) สีขาวจางๆ */
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15); 
+  border-radius: 10px; /* ทำให้มน */
+}
+
+/* ตอนเอาเมาส์ชี้ */
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3); 
+}
+
+/* (Optional) สำหรับ Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+}
+
+/* Class พิเศษถ้าอยากได้อันเล็กกว่าปกติ (เช่นในแชท) */
 .custom-scrollbar::-webkit-scrollbar {
   width: 6px;
 }
-.custom-scrollbar::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.05);
-}
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 10px;
-}
-.custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.4);
-}
 
-/* แก้ Input Autofill */
+/* แก้ Input Autofill ไม่ให้เป็นสีฟ้า */
 input:-webkit-autofill,
 input:-webkit-autofill:hover, 
 input:-webkit-autofill:focus, 
@@ -156,7 +174,7 @@ input:-webkit-autofill:active{
   animation: fade-in 0.3s ease-out forwards;
 }
 
-/* 🔥 SAFE AREA UTILITY: กันขอบล่าง iPhone X+ บังปุ่ม */
+/* Safe Area Utility */
 .safe-pb {
   padding-bottom: env(safe-area-inset-bottom, 20px);
 }
