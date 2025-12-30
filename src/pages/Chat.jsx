@@ -76,7 +76,7 @@ export default function Chat() {
     if (channelRef.current) supabase.removeChannel(channelRef.current);
   };
 
-  // 🔥 ฟังก์ชันจบแชทพร้อมเช็คการโดนรายงาน
+  // 🔥 ฟังก์ชันจบแชทฉบับแก้ไข: เช็กบทบาทจาก DB กันบัคสลับหน้า
   const finalExit = async () => {
     if (isFinished.current) return;
     isFinished.current = true; 
@@ -85,20 +85,29 @@ export default function Chat() {
     setShowConfirmEnd(false);
     setShowDisconnectWarning(false);
 
-    // เช็คว่ามี Report ที่เกี่ยวข้องกับเราหรือไม่ในห้องนี้
+    // 1. ดึงข้อมูลบทบาทจริงจาก Database ทันทีเพื่อความแม่นยำ
+    const { data: matchData } = await supabase
+      .from('matches')
+      .select('talker_id, listener_id')
+      .eq('id', matchId)
+      .single();
+
+    const amITalker = matchData?.talker_id === userId;
+
+    // 2. เช็คว่ามีการรีพอร์ตในห้องนี้หรือไม่
     const { data: report } = await supabase
       .from('reports')
-      .select('reporter_id, reported_id')
+      .select('id')
       .or(`reporter_id.eq.${userId},reported_id.eq.${userId}`)
       .eq('status', 'pending')
       .maybeSingle();
 
-    if (isTalker && !report) {
-        // เฉพาะ Talker ที่ไม่โดนรายงานถึงจะได้เห็นหน้า Rating
+    if (amITalker && !report) {
+        // เฉพาะผู้ระบายที่ไม่โดนรายงานถึงจะได้รีวิว
         setShowRating(true); 
     } else {
-        // ถ้าโดนรายงาน หรือเป็น Listener ให้ส่งไปหน้าขอบคุณที่ถูกต้องตามบทบาทตัวเอง
-        const targetPage = isTalker ? '/thank-you-talker' : '/thank-you-listener'; 
+        // นำทางไปหน้าขอบคุณที่ถูกต้องตามบทบาทจริงที่เช็กจาก DB
+        const targetPage = amITalker ? '/thank-you-talker' : '/thank-you-listener';
         navigate(targetPage, { replace: true });
     }
   };
@@ -146,7 +155,9 @@ export default function Chat() {
       .on('presence', { event: 'sync' }, () => {
         const newState = channelRef.current.presenceState();
         const onlineUsers = Object.keys(newState);
-        setIsPartnerOnline(onlineUsers.includes(targetPartnerId));
+        const partnerIsOnline = onlineUsers.includes(targetPartnerId);
+        setIsPartnerOnline(partnerIsOnline);
+        if (partnerIsOnline) setShowDisconnectWarning(false);
       })
       .on('presence', { event: 'leave' }, ({ key }) => {
          if (key === targetPartnerId) {
@@ -223,7 +234,7 @@ export default function Chat() {
 
   if (showReportModal) return (
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" style={{ height: `${viewportHeight}px` }}>
-        <div className="bg-soulis-800 border border-soulis-600 p-6 rounded-2xl w-full max-w-sm flex flex-col max-h-[90%]">
+        <div className="bg-soulis-800 border border-soulis-600 p-6 rounded-2xl w-full max-w-sm animate-float flex flex-col max-h-[90%] shadow-2xl">
           <div className="flex justify-between items-center mb-4 border-b border-white/10 pb-4">
             <h3 className="text-xl font-bold text-white flex items-center gap-2"><Flag className="text-red-500" /> รายงานผู้ใช้</h3>
             <button onClick={() => setShowReportModal(false)} className="text-gray-400 hover:text-white"><X /></button>
@@ -238,18 +249,18 @@ export default function Chat() {
                 </div>
             )}
           </div>
-          <button onClick={handleSubmitReport} disabled={!reportReason} className="w-full bg-red-600 hover:bg-red-700 text-white py-3 rounded-lg font-bold transition mt-auto">ส่งรายงาน</button>
+          <button onClick={handleSubmitReport} disabled={!reportReason} className="w-full bg-red-600 hover:bg-red-700 text-white py-3 rounded-lg font-bold shadow-lg transition mt-auto">ส่งรายงาน</button>
         </div>
       </div>
   );
 
   if (showRating) return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-soulis-900 p-4" style={{ height: `${viewportHeight}px` }}>
-        <div className="bg-white/10 backdrop-blur-xl border border-white/20 p-8 rounded-3xl shadow-2xl w-full max-w-md text-center">
+        <div className="bg-white/10 backdrop-blur-xl border border-white/20 p-8 rounded-3xl shadow-2xl w-full max-w-md text-center animate-float">
           <h2 className="text-2xl font-bold text-white mb-4">จบการสนทนาแล้ว</h2>
           <div className="flex justify-center gap-2 mb-6">
             {[...Array(10)].map((_, i) => (
-              <Star key={i} className={`cursor-pointer w-8 h-8 transition ${i < rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-600'}`} onClick={() => setRating(i + 1)} />
+              <Star key={i} className={`cursor-pointer w-8 h-8 transition hover:scale-110 ${i < rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-600'}`} onClick={() => setRating(i + 1)} />
             ))}
           </div>
           <p className="text-white mb-4 font-bold text-xl">{rating} / 10</p>
@@ -260,7 +271,7 @@ export default function Chat() {
   );
 
   return (
-    <div className="fixed inset-0 w-full bg-soulis-900 flex flex-col overflow-hidden" style={{ height: `${viewportHeight}px` }}>
+    <div className="fixed inset-0 w-full bg-soulis-900 flex flex-col overflow-hidden" style={{ height: `${viewportHeight}px`, position: 'fixed', top: 0, left: 0 }}>
       <Helmet><title>ห้องสนทนา - Soulis</title><meta name="robots" content="noindex" /></Helmet>
       <header className="flex-none h-16 bg-soulis-900/80 backdrop-blur-md px-4 shadow flex justify-between items-center z-10 border-b border-white/5">
         <div className="flex items-center gap-3">
@@ -269,12 +280,12 @@ export default function Chat() {
               <div className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-soulis-900 ${isPartnerOnline ? 'bg-green-500' : 'bg-gray-500'}`}></div>
             </div>
             <div>
-                <h1 className="font-bold text-white text-base">คุยกับ {partnerRole} {isTalker && partnerRating && <span className="bg-yellow-500/20 text-yellow-300 text-xs px-2 py-0.5 rounded-full border border-yellow-500/30">⭐ {partnerRating}</span>}</h1>
+                <h1 className="font-bold text-white text-base flex items-center gap-2">คุยกับ {partnerRole} {isTalker && partnerRating && <span className="bg-yellow-500/20 text-yellow-300 text-xs px-2 py-0.5 rounded-full border border-yellow-500/30">⭐ {partnerRating}</span>}</h1>
                 <div className="flex items-center gap-1.5 mt-0.5"><span className={`inline-flex rounded-full h-2 w-2 ${isPartnerOnline ? 'bg-green-500' : 'bg-gray-500'}`}></span><span className={`text-xs ${isPartnerOnline ? 'text-green-400' : 'text-gray-400'}`}>{isPartnerOnline ? 'Online' : 'Offline'}</span></div>
             </div>
         </div>
         <div className="flex gap-2">
-            <button onClick={() => setShowReportModal(true)} className="bg-white/5 text-gray-400 p-2.5 rounded-full transition"><Flag size={18} /></button>
+            <button onClick={() => setShowReportModal(true)} className="bg-white/5 text-gray-400 p-2.5 rounded-full transition hover:text-red-400"><Flag size={18} /></button>
             <button onClick={() => setShowConfirmEnd(true)} className="bg-red-500/10 text-red-400 px-4 py-2 rounded-full text-sm font-bold border border-red-500/20">จบแชท</button>
         </div>
       </header>
@@ -284,7 +295,7 @@ export default function Chat() {
             const isSeq = index > 0 && messages[index - 1].sender_id === msg.sender_id;
             return (
               <div key={msg.id} className={`flex w-full ${isMe ? 'justify-end' : 'justify-start'} ${isSeq ? 'mt-1' : 'mt-4'}`}>
-                  <div className={`px-5 py-3 text-sm md:text-base leading-relaxed break-words max-w-[85%] ${isMe ? 'bg-soulis-600 text-white rounded-2xl rounded-tr-sm' : 'bg-white/10 text-gray-100 border border-white/10 rounded-2xl rounded-tl-sm'}`}>{msg.content}</div>
+                  <div className={`px-5 py-3 text-sm md:text-base leading-relaxed break-words max-w-[85%] shadow-sm ${isMe ? 'bg-soulis-600 text-white rounded-2xl rounded-tr-sm' : 'bg-white/10 text-gray-100 border border-white/10 rounded-2xl rounded-tl-sm'}`}>{msg.content}</div>
               </div>
             );
         })}
@@ -292,7 +303,7 @@ export default function Chat() {
       </div>
       <form onSubmit={sendMessage} className="flex-none p-3 bg-soulis-900/95 backdrop-blur-xl border-t border-white/5 flex gap-2">
         <input type="text" value={newMessage} onChange={(e) => setNewMessage(e.target.value)} className="flex-1 bg-white/5 text-white border border-white/10 rounded-full px-5 py-3 focus:outline-none focus:border-soulis-500 transition" placeholder="พิมพ์ข้อความ..." />
-        <button type="submit" disabled={!newMessage.trim()} className="bg-soulis-500 text-white p-3 rounded-full"><Send size={20}/></button>
+        <button type="submit" disabled={!newMessage.trim()} className="bg-soulis-500 text-white p-3 rounded-full shadow-lg"><Send size={20}/></button>
       </form>
       {showDisconnectWarning && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
