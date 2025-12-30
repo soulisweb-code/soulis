@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
-import { LogOut, Trash2, AlertTriangle, Eye, Ban, CheckCircle, X, Users, Edit3, Save, Search, Heart } from 'lucide-react';
+import { LogOut, Trash2, AlertTriangle, Eye, Ban, CheckCircle, X, Users, Edit3, Save, Search, Heart, Mail } from 'lucide-react'; // 🔥 เพิ่ม Mail icon
 import { Helmet } from 'react-helmet-async';
 
 export default function AdminDashboard() {
@@ -40,6 +40,9 @@ export default function AdminDashboard() {
   const fetchData = async () => {
     try {
         const { data: reportsData } = await supabase.from('reports').select('*').order('created_at', { ascending: false });
+        
+        // 🔥 สำคัญ: ตรวจสอบว่าใน Database ตาราง profiles มี column 'email' หรือไม่
+        // ถ้าไม่มี ต้องไปเพิ่มใน Supabase SQL Editor หรือ Table Editor ก่อนนะครับ
         const { data: profilesData } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
         
         setUsers(profilesData || []);
@@ -72,14 +75,13 @@ export default function AdminDashboard() {
     setSelectedReport(null);
   };
 
-  // 🔥 ฟังก์ชันลบ Report (เพิ่มใหม่)
   const handleDeleteReport = async (reportId) => {
     if (!window.confirm("⚠️ ต้องการลบรายงานนี้ทิ้งถาวรใช่หรือไม่?")) return;
     const { error } = await supabase.from('reports').delete().eq('id', reportId);
     if (error) alert("Error: " + error.message);
     else {
         fetchData();
-        setSelectedReport(null); // ปิด Modal ถ้าเปิดอยู่
+        setSelectedReport(null); 
     }
   };
 
@@ -134,24 +136,24 @@ export default function AdminDashboard() {
     window.location.href = '/admin';
   };
 
-  const filteredUsers = users.filter(u => u.username?.toLowerCase().includes(searchTerm.toLowerCase()));
+  // 🔥 แก้ไข: เพิ่มการค้นหาด้วย Email
+  const filteredUsers = users.filter(u => 
+    u.username?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    u.email?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   if (loading) return <div className="min-h-screen flex items-center justify-center bg-soulis-900 text-white font-sans">Checking Access...</div>;
 
   return (
-    // 🔥 แก้ตรงนี้: เปลี่ยน min-h-screen เป็น h-screen เพื่อล็อคความสูงจอ และ overflow-hidden ที่ตัวแม่
     <div className="h-screen w-full font-sans text-white flex relative overflow-hidden bg-soulis-900">
       
-      {/* ✅ ส่วน SEO: ป้องกัน Google เข้าถึงหน้า Admin */}
       <Helmet>
         <title>Admin Dashboard - Soulis Management System</title>
         <meta name="robots" content="noindex" />
       </Helmet>
 
-      {/* Background Effect */}
       <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-soulis-700/20 rounded-full blur-[100px] pointer-events-none"></div>
       
-      {/* Sidebar - Fix height to full */}
       <div className="w-64 bg-soulis-800/50 backdrop-blur-xl border-r border-white/10 p-6 flex flex-col justify-between z-20 shrink-0 h-full">
         <div>
             <h1 className="text-2xl font-bold mb-8 text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400 tracking-wider">SOULIS ADMIN</h1>
@@ -173,7 +175,6 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      {/* 🔥 Main Content Area - ใช้ flex-1 และ overflow-y-auto เพื่อให้ scrollbar ขึ้นเฉพาะตรงนี้ */}
       <div className="flex-1 h-full overflow-y-auto relative z-10 custom-scrollbar p-8">
         
         {/* --- Tab: Reports --- */}
@@ -220,16 +221,34 @@ export default function AdminDashboard() {
         {/* --- Tab: Users --- */}
         {activeTab === 'users' && (
             <div className="animate-float">
-                <div className="flex justify-between items-center mb-6"><h2 className="text-3xl font-bold text-white">จัดการสมาชิก</h2><div className="relative"><Search className="absolute left-3 top-2.5 text-gray-400" size={18}/><input type="text" placeholder="ค้นหา..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="bg-white/5 border border-white/10 rounded-full py-2 pl-10 pr-4 text-white focus:outline-none focus:border-purple-500 transition w-64"/></div></div>
+                <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-3xl font-bold text-white">จัดการสมาชิก</h2>
+                    <div className="relative">
+                        <Search className="absolute left-3 top-2.5 text-gray-400" size={18}/>
+                        <input type="text" placeholder="ค้นหา Username หรือ Email..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="bg-white/5 border border-white/10 rounded-full py-2 pl-10 pr-4 text-white focus:outline-none focus:border-purple-500 transition w-72"/>
+                    </div>
+                </div>
                 <div className="bg-white/5 backdrop-blur-md rounded-3xl border border-white/10 overflow-hidden shadow-2xl">
                     <table className="w-full text-left">
                         <thead className="bg-black/20 text-purple-300 uppercase text-xs tracking-wider font-semibold border-b border-white/5">
-                            <tr><th className="p-4">User</th><th className="p-4">Role</th><th className="p-4">Status</th><th className="p-4 text-right">Action</th></tr>
+                            <tr>
+                                <th className="p-4">User</th>
+                                {/* 🔥 เพิ่มหัวตาราง Email */}
+                                <th className="p-4">Email</th> 
+                                <th className="p-4">Role</th>
+                                <th className="p-4">Status</th>
+                                <th className="p-4 text-right">Action</th>
+                            </tr>
                         </thead>
                         <tbody className="divide-y divide-white/5 text-sm">
                             {filteredUsers.map((user) => (
                                 <tr key={user.id} className="hover:bg-white/5 transition-colors">
                                     <td className="p-4 font-medium text-white">{user.username}</td>
+                                    {/* 🔥 เพิ่มช่องแสดง Email (ถ้าไม่มีจะขึ้นขีด -) */}
+                                    <td className="p-4 text-gray-400 flex items-center gap-2">
+                                        <Mail size={14} className="opacity-50"/>
+                                        {user.email || "-"}
+                                    </td>
                                     <td className="p-4"><span className={`px-2 py-1 rounded text-xs font-bold border ${user.role === 'admin' ? 'bg-purple-500/20 text-purple-300 border-purple-500/50' : 'bg-gray-700/50 text-gray-400 border-gray-600'}`}>{user.role.toUpperCase()}</span></td>
                                     <td className="p-4">{user.is_banned ? <span className="text-red-400 flex items-center gap-1"><Ban size={14}/> BANNED</span> : <span className="text-green-400 flex items-center gap-1"><CheckCircle size={14}/> Active</span>}</td>
                                     <td className="p-4 text-right flex justify-end gap-2">
@@ -246,7 +265,6 @@ export default function AdminDashboard() {
                         </tbody>
                     </table>
                 </div>
-                {/* Spacer to ensure last item isn't cut off */}
                 <div className="h-20"></div>
             </div>
         )}
