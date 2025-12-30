@@ -139,7 +139,8 @@ export default function AdminDashboard() {
   if (loading) return <div className="min-h-screen flex items-center justify-center bg-soulis-900 text-white font-sans">Checking Access...</div>;
 
   return (
-    <div className="min-h-screen font-sans text-white flex relative overflow-hidden bg-soulis-900">
+    // 🔥 แก้ตรงนี้: เปลี่ยน min-h-screen เป็น h-screen เพื่อล็อคความสูงจอ และ overflow-hidden ที่ตัวแม่
+    <div className="h-screen w-full font-sans text-white flex relative overflow-hidden bg-soulis-900">
       
       {/* ✅ ส่วน SEO: ป้องกัน Google เข้าถึงหน้า Admin */}
       <Helmet>
@@ -147,10 +148,11 @@ export default function AdminDashboard() {
         <meta name="robots" content="noindex" />
       </Helmet>
 
-      <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-soulis-700/20 rounded-full blur-[100px]"></div>
+      {/* Background Effect */}
+      <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-soulis-700/20 rounded-full blur-[100px] pointer-events-none"></div>
       
-      {/* Sidebar */}
-      <div className="w-64 bg-soulis-800/50 backdrop-blur-xl border-r border-white/10 p-6 flex flex-col justify-between z-10 shrink-0">
+      {/* Sidebar - Fix height to full */}
+      <div className="w-64 bg-soulis-800/50 backdrop-blur-xl border-r border-white/10 p-6 flex flex-col justify-between z-20 shrink-0 h-full">
         <div>
             <h1 className="text-2xl font-bold mb-8 text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400 tracking-wider">SOULIS ADMIN</h1>
             <nav className="space-y-2">
@@ -171,7 +173,8 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      <div className="flex-1 p-8 overflow-y-auto relative z-10">
+      {/* 🔥 Main Content Area - ใช้ flex-1 และ overflow-y-auto เพื่อให้ scrollbar ขึ้นเฉพาะตรงนี้ */}
+      <div className="flex-1 h-full overflow-y-auto relative z-10 custom-scrollbar p-8">
         
         {/* --- Tab: Reports --- */}
         {activeTab === 'reports' && (
@@ -200,7 +203,6 @@ export default function AdminDashboard() {
                                             <button onClick={() => setSelectedReport(report)} className="bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg flex items-center gap-1 transition">
                                                 <Eye size={14}/> ตรวจสอบ
                                             </button>
-                                            {/* 🔥 ปุ่มลบ Report */}
                                             <button onClick={() => handleDeleteReport(report.id)} className="bg-red-500/10 hover:bg-red-500/30 text-red-400 p-1.5 rounded-lg transition" title="ลบรายงาน">
                                                 <Trash2 size={16}/>
                                             </button>
@@ -215,7 +217,7 @@ export default function AdminDashboard() {
             </div>
         )}
 
-        {/* --- Tab: Users (เหมือนเดิม) --- */}
+        {/* --- Tab: Users --- */}
         {activeTab === 'users' && (
             <div className="animate-float">
                 <div className="flex justify-between items-center mb-6"><h2 className="text-3xl font-bold text-white">จัดการสมาชิก</h2><div className="relative"><Search className="absolute left-3 top-2.5 text-gray-400" size={18}/><input type="text" placeholder="ค้นหา..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="bg-white/5 border border-white/10 rounded-full py-2 pl-10 pr-4 text-white focus:outline-none focus:border-purple-500 transition w-64"/></div></div>
@@ -244,6 +246,8 @@ export default function AdminDashboard() {
                         </tbody>
                     </table>
                 </div>
+                {/* Spacer to ensure last item isn't cut off */}
+                <div className="h-20"></div>
             </div>
         )}
 
@@ -270,7 +274,6 @@ export default function AdminDashboard() {
                 <div className="p-4 border-t border-white/10 bg-black/20 flex justify-end gap-3">
                     <button onClick={() => handleDismiss(selectedReport.id)} className="px-4 py-2 text-gray-300 border border-white/10 rounded-lg">ยกฟ้อง</button>
                     <button onClick={() => handleBanFromReport(selectedReport.reported_id, selectedReport.id)} className="px-4 py-2 bg-red-600 text-white rounded-lg">แบนถาวร</button>
-                    {/* 🔥 เพิ่มปุ่มลบใน Modal ด้วย */}
                     <button onClick={() => handleDeleteReport(selectedReport.id)} className="px-4 py-2 bg-red-800 hover:bg-red-700 text-white rounded-lg flex items-center gap-2"><Trash2 size={16}/> ลบรายงาน</button>
                 </div>
             </div>
