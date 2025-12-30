@@ -1,17 +1,13 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
-import { Send, Star, User, AlertTriangle, LogOut, Flag, X } from 'lucide-react';
+import { Send, Star, User, AlertTriangle, LogOut, Flag, X, WifiOff } from 'lucide-react'; // เพิ่ม WifiOff ไอคอน
 import { Helmet } from 'react-helmet-async';
-
-// Import ระบบเสียง
 import { useSound } from '../context/SoundContext';
 
 export default function Chat() {
   const { matchId } = useParams();
   const navigate = useNavigate();
-  
-  // ดึงฟังก์ชันเล่นเสียงมาใช้
   const { playNotification } = useSound();
   
   const [messages, setMessages] = useState([]);
@@ -22,13 +18,15 @@ export default function Chat() {
   const [partnerRole, setPartnerRole] = useState('');
   const [partnerRating, setPartnerRating] = useState(null);
 
-  // 🔥 State สำหรับเช็กสถานะ Online ของคู่สนทนา
+  // State เช็กสถานะ Online
   const [isPartnerOnline, setIsPartnerOnline] = useState(false);
   
+  // 🔥 State ใหม่: ควบคุม Modal แจ้งเตือนเมื่อเพื่อนหลุด
+  const [showDisconnectWarning, setShowDisconnectWarning] = useState(false);
+
   const [showConfirmEnd, setShowConfirmEnd] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false); 
   const [reportReason, setReportReason] = useState('');
-  
   const [otherReasonText, setOtherReasonText] = useState('');
 
   const [showRating, setShowRating] = useState(false);
@@ -44,7 +42,7 @@ export default function Chat() {
   const intervalRef = useRef(null);
   const channelRef = useRef(null);
 
-  // Layout Fix: Visual Viewport
+  // Layout Fix
   useEffect(() => {
     const handleResize = () => {
       if (window.visualViewport) {
@@ -65,7 +63,6 @@ export default function Chat() {
     } else {
       window.addEventListener('resize', handleResize);
     }
-
     return () => {
       if (window.visualViewport) {
         window.visualViewport.removeEventListener('resize', handleResize);
@@ -91,6 +88,7 @@ export default function Chat() {
     killSystem();
     sessionStorage.removeItem('soulis_session');
     setShowConfirmEnd(false);
+    setShowDisconnectWarning(false); // ปิด popup แจ้งเตือนด้วยถ้าจบแชท
     if (talkerMode) setShowRating(true); 
     else navigate('/thank-you-listener', { replace: true });
   };
@@ -102,9 +100,6 @@ export default function Chat() {
   };
 
   useEffect(() => {
-    const sessionKey = sessionStorage.getItem('soulis_session');
-    if (!sessionKey) { navigate('/select-role', { replace: true }); return; }
-
     isFinished.current = false;
 
     const setupChat = async () => {
@@ -112,8 +107,9 @@ export default function Chat() {
       if (!user) return navigate('/');
       setUserId(user.id);
 
-      const { data: match } = await supabase.from('matches').select('*').eq('id', matchId).single();
-      if (!match || match.is_active === false) {
+      const { data: match, error } = await supabase.from('matches').select('*').eq('id', matchId).single();
+
+      if (error || !match || match.is_active === false) {
         sessionStorage.removeItem('soulis_session');
         alert('การสนทนานี้จบลงแล้วครับ');
         navigate('/select-role', { replace: true });
@@ -121,8 +117,17 @@ export default function Chat() {
       }
 
       const userIsTalker = match.talker_id === user.id;
-      const targetPartnerId = userIsTalker ? match.listener_id : match.talker_id; // ตัวแปร Local เพื่อความแม่นยำ
+      const userIsListener = match.listener_id === user.id;
 
+      if (!userIsTalker && !userIsListener) {
+        alert('คุณไม่มีสิทธิ์เข้าถึงห้องสนทนานี้');
+        navigate('/', { replace: true });
+        return;
+      }
+
+      sessionStorage.setItem('soulis_session', 'active');
+
+      const targetPartnerId = userIsTalker ? match.listener_id : match.talker_id;
       setIsTalker(userIsTalker);
       setPartnerId(targetPartnerId);
       setPartnerRole(userIsTalker ? 'ผู้รับฟัง' : 'ผู้ระบาย');
@@ -138,33 +143,28 @@ export default function Chat() {
       await fetchMessages();
       setTimeout(scrollToBottom, 100);
 
-      // 🔥 ตั้งค่า Realtime Channel พร้อมระบบ Presence (เช็กคนออนไลน์)
       channelRef.current = supabase.channel(`room-${matchId}`, {
-        config: { 
-          presence: { 
-            key: user.id, // ส่ง ID เราไปบอก Server
-          },
-        },
+        config: { presence: { key: user.id } },
       })
-        // 1. เช็กสถานะคนในห้อง (Sync)
         .on('presence', { event: 'sync' }, () => {
           const newState = channelRef.current.presenceState();
-          // ดูว่าในห้องมี ID ของ partner อยู่ไหม
           const isPartnerHere = Object.keys(newState).includes(targetPartnerId);
           setIsPartnerOnline(isPartnerHere);
         })
-        // 2. เมื่อมีคนเข้าห้อง (Join)
         .on('presence', { event: 'join' }, ({ key }) => {
            if (key === targetPartnerId) {
              setIsPartnerOnline(true);
-             // playNotification(); // (Optional: อยากให้มีเสียงตอนเพื่อนเข้าก็เปิดบรรทัดนี้)
+             // 🔥 ถ้าเพื่อนกลับมา ให้ปิดหน้าแจ้งเตือนทันที
+             setShowDisconnectWarning(false); 
            }
         })
-        // 3. เมื่อมีคนออกจากห้อง/หลุด (Leave)
         .on('presence', { event: 'leave' }, ({ key }) => {
-           if (key === targetPartnerId) setIsPartnerOnline(false);
+           if (key === targetPartnerId) {
+             setIsPartnerOnline(false);
+             // 🔥 ถ้าเพื่อนหลุด ให้เด้งเตือน
+             setShowDisconnectWarning(true);
+           }
         })
-        // 4. รับข้อความแชท (เหมือนเดิม)
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `match_id=eq.${matchId}` }, (payload) => {
            if (payload.new.content === '###END###') finalExit(userIsTalker);
            else if (payload.new.sender_id !== user.id) {
@@ -172,13 +172,11 @@ export default function Chat() {
                playNotification(); 
            }
         })
-        // 5. เช็กสถานะห้องปิด (เหมือนเดิม)
         .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'matches', filter: `id=eq.${matchId}` }, (payload) => {
            if (payload.new.is_active === false) finalExit(userIsTalker);
         })
         .subscribe(async (status) => {
           if (status === 'SUBSCRIBED') {
-            // 🔥 ส่งสัญญาณว่า "ฉันออนไลน์แล้ว"
             await channelRef.current.track({ 
               online_at: new Date().toISOString(),
               user_id: user.id 
@@ -219,23 +217,15 @@ export default function Chat() {
 
   const handleSubmitReport = async () => {
     if (!reportReason) return alert("กรุณาเลือกเหตุผล");
-    
     let finalReason = reportReason;
     if (reportReason === 'อื่นๆ') {
         if (!otherReasonText.trim()) return alert("กรุณาระบุรายละเอียดเพิ่มเติมสำหรับ 'อื่นๆ'");
         finalReason = `อื่นๆ: ${otherReasonText}`; 
     }
-
     if (!confirm("ยืนยันการรายงาน?")) return;
-    
     const { error } = await supabase.from('reports').insert({ 
-        reporter_id: userId, 
-        reported_id: partnerId, 
-        reason: finalReason, 
-        chat_evidence: messages, 
-        status: 'pending' 
+        reporter_id: userId, reported_id: partnerId, reason: finalReason, chat_evidence: messages, status: 'pending' 
     });
-    
     if (error) return alert("Error: " + error.message);
     alert("ได้รับรายงานแล้ว");
     confirmEndChat(); 
@@ -254,26 +244,20 @@ export default function Chat() {
             <h3 className="text-xl font-bold text-white flex items-center gap-2"><Flag className="text-red-500" /> รายงานผู้ใช้</h3>
             <button onClick={() => setShowReportModal(false)} className="text-gray-400 hover:text-white"><X /></button>
           </div>
-          
           <div className="space-y-2 mb-4 overflow-y-auto custom-scrollbar flex-1">
             {['ใช้ถ้อยคำหยาบคาย', 'คุกคามทางเพศ', 'หลอกลวง', 'ก่อกวน', 'อื่นๆ'].map((r) => (
               <button key={r} onClick={() => setReportReason(r)} className={`w-full text-left px-4 py-2.5 rounded-lg text-sm transition ${reportReason === r ? 'bg-red-600 text-white' : 'bg-white/5 text-gray-300 hover:bg-white/10'}`}>{r}</button>
             ))}
-
             {reportReason === 'อื่นๆ' && (
                 <div className="pt-2 animate-fade-in">
                     <label className="text-xs text-red-300 mb-1 block">* โปรดระบุรายละเอียด:</label>
                     <textarea 
                         className="w-full bg-black/30 border border-red-500/50 rounded-lg p-3 text-white text-sm focus:border-red-400 outline-none resize-none"
-                        rows="3"
-                        placeholder="เช่น พยายามขายของ, ขอข้อมูลส่วนตัว..."
-                        value={otherReasonText}
-                        onChange={(e) => setOtherReasonText(e.target.value)}
+                        rows="3" placeholder="เช่น พยายามขายของ, ขอข้อมูลส่วนตัว..." value={otherReasonText} onChange={(e) => setOtherReasonText(e.target.value)}
                     />
                 </div>
             )}
           </div>
-
           <button onClick={handleSubmitReport} disabled={!reportReason} className="w-full bg-red-600 hover:bg-red-700 disabled:bg-gray-600 text-white py-3 rounded-lg font-bold transition shadow-lg mt-auto">ส่งรายงาน</button>
         </div>
       </div>
@@ -298,15 +282,8 @@ export default function Chat() {
   return (
     <div 
         className="fixed inset-0 w-full bg-soulis-900 flex flex-col overflow-hidden"
-        style={{ 
-          height: `${viewportHeight}px`,
-          position: 'fixed', 
-          top: 0, 
-          left: 0,
-          touchAction: 'none' 
-        }} 
+        style={{ height: `${viewportHeight}px`, position: 'fixed', top: 0, left: 0, touchAction: 'none' }} 
     >
-      
       <Helmet>
         <title>ห้องสนทนา - Soulis พื้นที่ปลอดภัย</title>
         <meta name="robots" content="noindex" />
@@ -316,13 +293,10 @@ export default function Chat() {
         <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-gradient-to-br from-soulis-500 to-soulis-700 rounded-full flex items-center justify-center shadow-md relative">
               <User className="text-white w-5 h-5" />
-              {/* จุดเขียวเล็กๆ ที่ Avatar (เสริม) */}
               <div className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-soulis-900 ${isPartnerOnline ? 'bg-green-500' : 'bg-gray-500'}`}></div>
             </div>
             <div>
                 <h1 className="font-bold text-white text-base flex items-center gap-2">คุยกับ {partnerRole} {isTalker && partnerRating && <span className="bg-yellow-500/20 text-yellow-300 text-xs px-2 py-0.5 rounded-full border border-yellow-500/30">⭐ {partnerRating}</span>}</h1>
-                
-                {/* 🔥 ส่วนแสดงสถานะ Online/Offline ใหม่ */}
                 <div className="flex items-center gap-1.5 mt-0.5">
                     <span className="relative flex h-2 w-2">
                       {isPartnerOnline && <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>}
@@ -332,7 +306,6 @@ export default function Chat() {
                         {isPartnerOnline ? 'Online' : 'Offline'}
                     </span>
                 </div>
-
             </div>
         </div>
         <div className="flex gap-2">
@@ -361,20 +334,46 @@ export default function Chat() {
       </div>
 
       {/* Input Bar */}
-      <form onSubmit={sendMessage} className="flex-none p-3 bg-soulis-900/95 backdrop-blur-xl border-t border-white/5 flex gap-2"
-            style={{ paddingBottom: 'env(safe-area-inset-bottom)' }} 
-      >
+      <form onSubmit={sendMessage} className="flex-none p-3 bg-soulis-900/95 backdrop-blur-xl border-t border-white/5 flex gap-2" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
         <input 
-            type="text" 
-            value={newMessage} 
-            onChange={(e) => setNewMessage(e.target.value)} 
+            type="text" value={newMessage} onChange={(e) => setNewMessage(e.target.value)} 
             className="flex-1 bg-white/5 text-white placeholder-gray-400 border border-white/10 rounded-full px-5 py-3 focus:outline-none focus:bg-white/10 focus:border-soulis-500 transition text-sm md:text-base" 
             placeholder="พิมพ์ข้อความ..." 
         />
         <button type="submit" disabled={!newMessage.trim()} className="bg-soulis-500 hover:bg-soulis-400 text-white p-3 rounded-full transition shadow-lg shadow-soulis-500/30 disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"><Send size={20}/></button>
       </form>
 
-      {/* Confirm Modal */}
+      {/* 🔥 Modal แจ้งเตือนเมื่อคู่สนทนาหลุด */}
+      {showDisconnectWarning && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+            <div className="bg-soulis-800 border border-red-500/50 p-6 rounded-2xl w-full max-w-sm text-center animate-float shadow-2xl">
+                <div className="w-14 h-14 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-red-500/20">
+                    <WifiOff className="text-red-500" size={28} />
+                </div>
+                <h3 className="text-xl font-bold text-white mb-2">{partnerRole} หลุดการเชื่อมต่อ</h3>
+                <p className="text-gray-300 text-sm mb-6 leading-relaxed">
+                    เขาอาจจะสัญญาณเน็ตหายหรือปิดหน้าจอไปชั่วคราว<br/>
+                    คุณต้องการรอเขากลับมา หรือออกจากแชท?
+                </p>
+                <div className="flex gap-3">
+                    <button 
+                        onClick={() => setShowDisconnectWarning(false)} 
+                        className="flex-1 bg-white/5 hover:bg-white/10 border border-white/10 text-white py-2.5 rounded-xl font-bold transition"
+                    >
+                        รออีกนิด
+                    </button>
+                    <button 
+                        onClick={() => { setShowDisconnectWarning(false); confirmEndChat(); }} 
+                        className="flex-1 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white py-2.5 rounded-xl font-bold shadow-lg shadow-red-500/20 transition"
+                    >
+                        ออกเลย
+                    </button>
+                </div>
+            </div>
+        </div>
+      )}
+
+      {/* Confirm End Modal */}
       {showConfirmEnd && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" style={{ height: `${viewportHeight}px` }}>
             <div className="bg-soulis-800 border border-soulis-600 p-6 rounded-2xl w-full max-w-sm text-center animate-float">
