@@ -4,10 +4,10 @@ import { useLocation } from 'react-router-dom';
 const SoundContext = createContext();
 
 export function SoundProvider({ children }) {
-  const [isMusicOn, setIsMusicOn] = useState(false);
-  const [isNotifyOn, setIsNotifyOn] = useState(true);
+  // 🔥 แก้จุดที่ 1: เปลี่ยนค่าเริ่มต้นจาก false เป็น true (เพื่อให้เพลงเริ่มเล่นเองเลย)
+  const [isMusicOn, setIsMusicOn] = useState(true);
   
-  // 🔥 1. เพิ่ม Ref เพื่อเก็บสถานะล่าสุด (แก้ปัญหา Closure Trap)
+  const [isNotifyOn, setIsNotifyOn] = useState(true);
   const isNotifyOnRef = useRef(isNotifyOn);
   
   const [volume, setVolume] = useState(0.1); 
@@ -18,22 +18,35 @@ export function SoundProvider({ children }) {
 
   const silentPages = ['/', '/admin', '/admin-dashboard'];
 
-  // 🔥 2. อัปเดต Ref ทุกครั้งที่ State เปลี่ยน
+  // อัปเดต Ref ทุกครั้งที่ State เปลี่ยน (แก้บั๊กปิดเสียงแจ้งเตือนไม่ได้)
   useEffect(() => {
     isNotifyOnRef.current = isNotifyOn;
   }, [isNotifyOn]);
 
+  // จัดการการเล่นเพลง (Play/Pause) ตามหน้าและสถานะ
   useEffect(() => {
     if (silentPages.includes(location.pathname)) {
         musicRef.current?.pause();
     } else {
         if (isMusicOn) {
             if (musicRef.current) musicRef.current.volume = volume;
-            musicRef.current?.play().catch(() => setIsMusicOn(false));
+            
+            // สั่งเล่นเพลง
+            const playPromise = musicRef.current?.play();
+
+            // 🔥 เพิ่มการดัก Error กรณี Browser บล็อก Autoplay
+            if (playPromise !== undefined) {
+                playPromise.catch((error) => {
+                    console.log("Autoplay prevented by browser:", error);
+                    // ถ้าอยากให้ปุ่มยังขึ้นว่า ON อยู่ แม้เสียงจะไม่ออก (รอคนคลิก) ให้คอมเมนต์บรรทัดล่างทิ้งครับ
+                    // setIsMusicOn(false); 
+                });
+            }
         }
     }
   }, [location, isMusicOn]);
 
+  // จัดการระดับเสียงแบบ Realtime
   useEffect(() => {
     if (musicRef.current) {
         musicRef.current.volume = volume;
@@ -45,18 +58,16 @@ export function SoundProvider({ children }) {
       musicRef.current?.pause();
     } else {
       if (musicRef.current) musicRef.current.volume = volume;
-      musicRef.current?.play();
+      musicRef.current?.play().catch(e => console.log("Play error:", e));
     }
     setIsMusicOn(!isMusicOn);
   };
 
   const toggleNotify = () => {
     setIsNotifyOn(!isNotifyOn);
-    // (Ref จะถูกอัปเดตอัตโนมัติจาก useEffect ข้างบน)
   };
 
   const playNotification = () => {
-    // 🔥 3. เช็คจาก Ref แทน State (จะได้ค่าล่าสุดเสมอ แม้ใน Event Listener เก่า)
     if (isNotifyOnRef.current && notifyRef.current) {
         notifyRef.current.volume = 0.5;
         notifyRef.current.currentTime = 0;
