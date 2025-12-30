@@ -78,15 +78,31 @@ export default function Chat() {
     if (channelRef.current) supabase.removeChannel(channelRef.current);
   };
 
-  const finalExit = (talkerMode) => {
+  // 🔥 ปรับปรุง finalExit ให้รองรับการ "ถูกรายงาน"
+  const finalExit = async (talkerMode) => {
     if (isFinished.current) return;
     isFinished.current = true; 
     killSystem();
     sessionStorage.removeItem('soulis_session');
     setShowConfirmEnd(false);
     setShowDisconnectWarning(false);
-    if (talkerMode) setShowRating(true); 
-    else navigate('/thank-you-listener', { replace: true });
+
+    // เช็คว่าห้องนี้มีการ Report เกิดขึ้นหรือไม่
+    const { data: reportExists } = await supabase
+      .from('reports')
+      .select('id')
+      .eq('reporter_id', partnerId) // ถ้าคนที่เราคุยด้วยเป็นคนแจ้ง
+      .eq('reported_id', userId)   // และเราเป็นคนถูกแจ้ง
+      .maybeSingle();
+
+    if (talkerMode && !reportExists) {
+        // เป็น Talker และ "ไม่โดนรีพอร์ต" ถึงจะได้รีวิว
+        setShowRating(true); 
+    } else {
+        // เป็น Listener หรือ "เป็น Talker ที่โดนรีพอร์ต" ให้ไปหน้าขอบคุณทันที
+        const targetPage = talkerMode ? '/thank-you-talker' : '/thank-you-listener';
+        navigate(targetPage, { replace: true });
+    }
   };
 
   const fetchMessages = async () => {
@@ -209,6 +225,7 @@ export default function Chat() {
     finalExit(isTalker);
   };
 
+  // 🔥 ปรับปรุง handleSubmitReport ให้ดีดออกทันทีตามเงื่อนไขของคุณ
   const handleSubmitReport = async () => {
     if (!reportReason) return alert("กรุณาเลือกเหตุผล");
     let finalReason = reportReason;
@@ -216,7 +233,7 @@ export default function Chat() {
         if (!otherReasonText.trim()) return alert("กรุณาระบุรายละเอียดเพิ่มเติมสำหรับ 'อื่นๆ'");
         finalReason = `อื่นๆ: ${otherReasonText}`; 
     }
-    if (!confirm("ยืนยันการรายงานและจบการสนทนาทันที?")) return;
+    if (!confirm("ยืนยันการรายงาน? ระบบจะจบการสนทนาทันทีเพื่อความปลอดภัย")) return;
 
     try {
         const { error } = await supabase.from('reports').insert({ 
@@ -224,22 +241,21 @@ export default function Chat() {
         });
         if (error) throw error;
 
-        alert("ได้รับรายงานแล้ว ระบบจะนำคุณออกจากห้องสนทนา");
+        alert("ได้รับรายงานแล้ว ระบบกำลังนำคุณออกจากห้องสนทนา");
         
-        // จบแชทและนำทางออกทันทีเพื่อกันสแปม
+        // จบแชทในระบบ
         await supabase.from('messages').insert([{ match_id: matchId, sender_id: userId, content: '###END###' }]);
         await supabase.from('matches').update({ is_active: false }).eq('id', matchId);
         
+        // ปิดระบบและลบ Session
         isFinished.current = true;
         killSystem();
         sessionStorage.removeItem('soulis_session');
 
-        if (isTalker) {
-            setShowReportModal(false);
-            setShowRating(true);
-        } else {
-            navigate('/thank-you-listener', { replace: true });
-        }
+        // 🔥 เงื่อนไขของคุณ: คนแจ้งที่เป็น Listener หรือ Talker จะถูกดีดไปหน้าขอบคุณทันที (ไม่ให้รีวิวเพื่อกันอคติ)
+        const targetPage = isTalker ? '/thank-you-talker' : '/thank-you-listener';
+        navigate(targetPage, { replace: true });
+
     } catch (err) {
         alert("Error: " + err.message);
     }
