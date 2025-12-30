@@ -27,7 +27,7 @@ export default function Footer() {
         <span className="text-white/10">|</span>
         <Link to="/privacy-policy" className="hover:text-white transition hover:underline decoration-soulis-500">นโยบาย</Link>
         <span className="text-white/10">|</span>
-        <span className="opacity-50">© 2025 Soulis</span>
+        <span className="opacity-50">© 2024 - {new Date().getFullYear()} Soulis</span>
       </div>
     </footer>
   );
