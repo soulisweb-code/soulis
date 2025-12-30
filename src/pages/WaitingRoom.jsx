@@ -14,6 +14,7 @@ export default function WaitingRoom() {
   const isRunning = useRef(false);
   const queueIdRef = useRef(null);
   const intervalRef = useRef(null);
+  const heartbeatRef = useRef(null); // 🔥 Ref สำหรับชีพจรหัวใจ
   const channelRef = useRef(null);
 
   useEffect(() => {
@@ -37,15 +38,19 @@ export default function WaitingRoom() {
       setStatus('กำลังค้นหาเพื่อนคู่คิด...');
       const lookingFor = myRole === 'talker' ? 'listener' : 'talker';
 
-      // 2. ลองค้นหาคนในคิวก่อน
+      // 2. ลองค้นหาคนในคิว (ที่ยังมีชีวิตอยู่)
+      // 🔥 สูตรคำนวณ: เวลาปัจจุบัน ลบไป 10 วินาที (ใครไม่อัปเดตนานกว่านี้ถือว่าไม่อยู่แล้ว)
+      const cutoffTime = new Date(Date.now() - 10000).toISOString();
+
       const { data: potentialMatch } = await supabase
         .from('queue')
         .select('*')
         .eq('my_role', lookingFor)
+        .gt('last_active', cutoffTime) // 🔥 กรองเฉพาะคนที่มีชีพจร (ไม่เกิน 10 วิ)
         .neq('user_id', user.id) // ไม่เอาตัวเอง
         .order('created_at', { ascending: true }) // เอาคนรอนานสุด
         .limit(1)
-        .maybeSingle(); // ใช้ maybeSingle เพื่อกัน Error ถ้าไม่เจอ
+        .maybeSingle();
 
       if (potentialMatch) {
         // --- เจอคนรออยู่! จับคู่เลย ---
@@ -60,7 +65,7 @@ export default function WaitingRoom() {
 
         if (isBusy) {
             // เขาไม่ว่างแล้ว (โดนคนอื่นตัดหน้า) -> เริ่มต้นใหม่
-            await supabase.from('queue').delete().eq('id', potentialMatch.id); // ลบคิวผีทิ้ง
+            // ไม่ลบคิวเขา ปล่อยให้ระบบ Heartbeat ของเขาจัดการเอง หรือรอรอบหน้า
             setTimeout(initializeMatching, 1000);
             return;
         }
@@ -79,19 +84,38 @@ export default function WaitingRoom() {
         }
 
         // ลบทั้งคู่จากคิว
-        await supabase.from('queue').delete().eq('id', potentialMatch.id);
+        await supabase.from('queue').delete().in('id', [potentialMatch.id]); // ลบของคู่
+        // ของเราไม่ต้องลบ เพราะยังไม่ได้สร้างคิวลง database
+        
         navigate(`/chat/${match.id}`, { replace: true });
 
       } else {
         // --- ไม่เจอใครเลย -> เข้าคิวรอ ---
         setStatus('รอเพื่อนอีกฝั่งสักครู่...');
         
+        // ใส่ last_active ตอนสร้างคิวด้วย
         const { data: myQueue } = await supabase.from('queue')
-            .insert([{ user_id: user.id, my_role: myRole, looking_for_role: lookingFor }])
+            .insert([{ 
+                user_id: user.id, 
+                my_role: myRole, 
+                looking_for_role: lookingFor,
+                last_active: new Date() // 🔥 เริ่มต้นเวลาชีพจร
+            }])
             .select()
             .single();
         
         if (myQueue) queueIdRef.current = myQueue.id;
+
+        // 🔥 C. เริ่มระบบ Heartbeat (ส่งชีพจรทุก 3 วิ)
+        // นี่คือหัวใจสำคัญ: บอก Server ตลอดเวลาว่า "ฉันยังอยู่นะ"
+        heartbeatRef.current = setInterval(async () => {
+            if (queueIdRef.current) {
+                await supabase
+                    .from('queue')
+                    .update({ last_active: new Date() }) // อัปเดตเวลาล่าสุด
+                    .eq('id', queueIdRef.current);
+            }
+        }, 3000);
 
         // 🔥 A. ตั้งรับ Realtime (วิธีหลัก)
         channelRef.current = supabase.channel('waiting-room')
@@ -103,7 +127,7 @@ export default function WaitingRoom() {
           })
           .subscribe();
 
-        // 🔥 B. ตั้งรับ Polling (วิธีกันเหนียว: เช็คทุก 3 วิ เผื่อ Realtime ไม่เด้ง)
+        // 🔥 B. ตั้งรับ Polling (วิธีกันเหนียว)
         intervalRef.current = setInterval(async () => {
             const { data: myMatch } = await supabase.from('matches')
                 .select('id')
@@ -119,6 +143,9 @@ export default function WaitingRoom() {
     };
 
     const goToChat = async (matchId) => {
+        // หยุดชีพจรทันทีที่เจอคู่
+        if (heartbeatRef.current) clearInterval(heartbeatRef.current);
+        
         if (queueIdRef.current) await supabase.from('queue').delete().eq('id', queueIdRef.current);
         navigate(`/chat/${matchId}`, { replace: true });
     };
@@ -127,8 +154,11 @@ export default function WaitingRoom() {
     setTimeout(initializeMatching, 500);
 
     return () => {
+      // Cleanup เมื่อออกจากหน้านี้
       if (channelRef.current) supabase.removeChannel(channelRef.current);
       if (intervalRef.current) clearInterval(intervalRef.current);
+      if (heartbeatRef.current) clearInterval(heartbeatRef.current); // 🔥 หยุดชีพจร
+      
       // ถ้ากดออก หรือเปลี่ยนหน้า ให้ลบตัวเองจากคิวด้วย
       if (queueIdRef.current) supabase.from('queue').delete().eq('id', queueIdRef.current);
     };
@@ -137,7 +167,6 @@ export default function WaitingRoom() {
   return (
     <div className="h-full w-full fixed inset-0 bg-soulis-900 flex flex-col items-center justify-center p-4 text-white text-center font-sans overflow-hidden">
       
-      {/* ✅ ส่วน SEO: เปลี่ยนชื่อ Title ให้ผู้ใช้รู้สถานะ และสั่ง noindex */}
       <Helmet>
         <title>{status === 'กำลังเชื่อมต่อระบบ...' ? 'กำลังเชื่อมต่อ... - Soulis' : 'กำลังค้นหาเพื่อน... - Soulis'}</title>
         <meta name="robots" content="noindex" />
