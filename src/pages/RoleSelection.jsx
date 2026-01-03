@@ -14,13 +14,14 @@ export default function RoleSelection() {
     let mounted = true;
 
     const initAuth = async () => {
-      // 1. ลองดึง Session ปัจจุบันก่อน
       const { data: { session }, error } = await supabase.auth.getSession();
       
       if (error) {
-        console.error("Session Error:", error);
-        if(mounted) setErrorMsg("เกิดข้อผิดพลาดของ Session: " + error.message);
-        setLoading(false);
+        if(mounted) {
+            console.error("Session Error:", error);
+            setErrorMsg("เกิดข้อผิดพลาดของ Session: " + error.message);
+            setLoading(false);
+        }
         return;
       }
 
@@ -29,12 +30,10 @@ export default function RoleSelection() {
         await checkAndCreateProfile(session.user);
         if(mounted) setLoading(false);
       } else {
-        // ถ้ายังไม่มี Session ให้รอ Listener ทำงาน (เผื่อกำลัง Redirect มา)
         console.log("No session yet, waiting for auth state change...");
       }
     };
 
-    // 2. ดักจับ Event เมื่อ Google ส่งข้อมูลกลับมา
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log("Auth Event:", event);
       
@@ -44,7 +43,6 @@ export default function RoleSelection() {
         if(mounted) setLoading(false);
       } 
       else if (event === 'SIGNED_OUT') {
-        // ไม่ต้องทำอะไร ปล่อยให้ User กดปุ่มกลับเอง ถ้าต้องการ
         if(mounted) setLoading(false);
       }
     });
@@ -59,40 +57,40 @@ export default function RoleSelection() {
 
   const checkAndCreateProfile = async (user) => {
     try {
-        // 1. เช็คว่ามี Profile หรือยัง
-        const { data: profile, error: fetchError } = await supabase
+        // 1. ลองดึงข้อมูล Profile
+        const { data: profile } = await supabase
             .from('profiles')
             .select('id')
             .eq('id', user.id)
             .maybeSingle();
 
-        if (fetchError) {
-             console.error("Fetch Profile Error:", fetchError);
-             // ไม่ซีเรียส อาจจะแค่เน็ตหลุด หรือ RLS บล็อก Select
-        }
-
-        // 2. ถ้าไม่มี Profile -> สร้างใหม่
+        // 2. ถ้ายังไม่มี Profile ให้สร้างใหม่
         if (!profile) {
             console.log("Creating new profile for:", user.email);
             
-            const googleName = user.user_metadata?.full_name;
-            const displayName = googleName || user.email?.split('@')[0] || 'Soulis User';
+            // 🔥 [FIXED] สร้างชื่อแบบสุ่มเลขต่อท้าย เพื่อป้องกันชื่อซ้ำ (Duplicate Key Error)
+            const googleName = user.user_metadata?.full_name?.replace(/\s+/g, '') || 'User'; // ตัดช่องว่างออก
+            const randomSuffix = Math.floor(1000 + Math.random() * 9000); // สุ่มเลข 4 หลัก
+            const uniqueUsername = `${googleName}_${randomSuffix}`; // เช่น Somchai_4829
 
-            // 🔥 ใส่ email ลงไปด้วย เผื่อ DB บังคับ (เปิดบรรทัด email)
             const { error: insertError } = await supabase.from('profiles').insert({
                 id: user.id,
-                username: displayName,
-                email: user.email, 
+                username: uniqueUsername, // ใช้ชื่อที่ไม่ซ้ำแน่นอน
+                // email: user.email, // ถ้า DB มี column email ให้เปิดบรรทัดนี้
                 role: 'user',
                 is_banned: false
             });
 
             if (insertError) {
                 console.error("INSERT FAILED:", insertError);
-                // 🔥 โชว์ Error ให้เห็นชัดๆ บนหน้าจอ
-                setErrorMsg(`สร้าง User ไม่ได้: ${insertError.message} (Code: ${insertError.code})`);
+                // ถ้ายัง Error อีก แสดงว่าดวงซวยจัด สุ่มเลขซ้ำ (โอกาสน้อยมาก) หรือติด Policy อื่น
+                if (insertError.code === '23505') {
+                    setErrorMsg("ชื่อผู้ใช้ซ้ำ กรุณาลองใหม่อีกครั้ง");
+                } else {
+                    setErrorMsg(`สร้าง User ไม่ได้: ${insertError.message}`);
+                }
             } else {
-                console.log("✅ Profile created successfully");
+                console.log("✅ Profile created successfully as:", uniqueUsername);
             }
         }
     } catch (err) {
@@ -124,7 +122,6 @@ export default function RoleSelection() {
     navigate('/');
   }
 
-  // 🔥 หน้าจอ Loading / Error (ไม่ดีดกลับเองแล้ว)
   if (loading || errorMsg) {
       return (
         <div className="h-screen w-full flex flex-col items-center justify-center bg-soulis-900 text-white gap-6 p-6 text-center font-sans">
@@ -159,11 +156,7 @@ export default function RoleSelection() {
       </Helmet>
 
       <div className="min-h-full flex flex-col items-center justify-center p-6 pt-24 pb-32">
-        
-        {/* Background */}
         <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-soulis-800 via-soulis-900 to-black opacity-80 pointer-events-none -z-10"></div>
-        
-        {/* Profile Button */}
         <div className="absolute top-6 right-6 z-20">
            <button onClick={() => navigate('/profile')} className="flex items-center gap-3 bg-white/10 hover:bg-white/20 text-white px-5 py-3 rounded-full backdrop-blur-md border border-white/10 transition-all hover:border-white/30 shadow-lg shadow-soulis-900/50 group">
             <div className="w-8 h-8 bg-gradient-to-tr from-soulis-500 to-pink-500 rounded-full flex items-center justify-center"><UserCircle size={20} /></div>
@@ -171,7 +164,6 @@ export default function RoleSelection() {
           </button>
         </div>
 
-        {/* Title */}
         <div className="relative z-10 text-center space-y-4 mb-12 mt-4">
             <h2 className="text-4xl md:text-6xl font-bold text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.3)] tracking-tight">
               วันนี้ <span className="text-transparent bg-clip-text bg-gradient-to-r from-soulis-300 to-soulis-accent">ใจของคุณ</span> เป็นแบบไหน?
@@ -179,7 +171,6 @@ export default function RoleSelection() {
             <p className="text-soulis-200/80 text-lg font-light">เลือกบทบาทที่คุณต้องการเป็นในตอนนี้...</p>
         </div>
         
-        {/* Cards */}
         <div className="relative z-10 flex flex-col md:flex-row gap-8 w-full max-w-4xl px-4">
           <button onClick={() => chooseRole('talker')} 
             className="flex-1 group relative overflow-hidden rounded-[2.5rem] p-[1px] transition-all duration-500 hover:scale-105 hover:shadow-[0_0_50px_rgba(244,63,94,0.4)]">
@@ -205,7 +196,6 @@ export default function RoleSelection() {
             </div>
           </button>
         </div>
-
       </div>
     </div>
   );
