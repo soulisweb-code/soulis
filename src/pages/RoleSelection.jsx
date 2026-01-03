@@ -1,54 +1,56 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { UserCircle, Loader2 } from 'lucide-react'; // เพิ่ม Icon Loader
+import { UserCircle, Loader2 } from 'lucide-react'; 
 import { supabase } from '../supabaseClient';
 import { Helmet } from 'react-helmet-async';
 
 export default function RoleSelection() {
   const navigate = useNavigate();
   const [userId, setUserId] = useState(null);
-  const [loading, setLoading] = useState(true); // 🔥 เพิ่มสถานะ Loading
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // 🔥 ใช้ onAuthStateChange แทน getUser เพื่อความชัวร์หลัง Redirect
-    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
-      
-      if (session?.user) {
-        setUserId(session.user.id);
-        await checkAndCreateProfile(session.user);
-        setLoading(false); // โหลดเสร็จแล้ว ปล่อยให้เข้าใช้งาน
-      } else if (event === 'SIGNED_OUT' || !session) {
-        // ถ้าไม่มี Session จริงๆ ค่อยดีดกลับ
-        // แต่เราจะหน่วงเวลาเล็กน้อยเพื่อให้แน่ใจว่าไม่ใช่แค่เน็ตช้า
-        setTimeout(() => {
-            // เช็คอีกที
-            supabase.auth.getSession().then(({ data }) => {
-                if (!data.session) navigate('/');
-            });
-        }, 500);
-      }
-    });
+    // 🔥 ใช้ Logic แบบ async/await เส้นตรง ไม่ซับซ้อน เพื่อกันการเด้งมั่ว
+    const initPage = async () => {
+      try {
+        // 1. เช็ค User ปัจจุบัน
+        const { data: { user }, error } = await supabase.auth.getUser();
 
-    return () => {
-      authListener.subscription.unsubscribe();
+        // ถ้าไม่มี User หรือ Error -> ดีดกลับหน้าแรก
+        if (error || !user) {
+            console.log("No user found, redirecting...");
+            navigate('/'); 
+            return;
+        }
+
+        setUserId(user.id);
+
+        // 2. เช็คและสร้าง Profile (ถ้า RLS ถูกต้อง ข้อมูลจะมาแน่นอน)
+        await checkAndCreateProfile(user);
+
+        // 3. ทุกอย่างเสร็จสิ้น ปิดหน้าโหลด
+        setLoading(false);
+
+      } catch (err) {
+        console.error("Auth Error:", err);
+        navigate('/');
+      }
     };
+
+    initPage();
   }, [navigate]);
 
-  // ฟังก์ชันแยกสำหรับสร้าง Profile (เพื่อให้ Code อ่านง่าย)
   const checkAndCreateProfile = async (user) => {
     try {
-        // 1. ลองดึงข้อมูล Profile
-        const { data: profile, error } = await supabase
+        const { data: profile } = await supabase
             .from('profiles')
             .select('id')
             .eq('id', user.id)
-            .maybeSingle(); // ใช้ maybeSingle เพื่อไม่ให้ error แดง
+            .maybeSingle();
 
-        // 2. ถ้าไม่มี Profile -> สร้างใหม่ทันที
         if (!profile) {
-            console.log("Creating new profile...");
+            console.log("Creating new profile for:", user.email);
             
-            // ดึงชื่อจาก Google Metadata
             const googleName = user.user_metadata?.full_name;
             const emailName = user.email?.split('@')[0];
             const displayName = googleName || emailName || 'Unknown Soul';
@@ -56,20 +58,20 @@ export default function RoleSelection() {
             const { error: insertError } = await supabase.from('profiles').insert({
                 id: user.id,
                 username: displayName,
-                // email: user.email, // ⚠️ เปิดบรรทัดนี้ถ้า Database มี column email
+                // email: user.email, // เปิดบรรทัดนี้ถ้าใน DB มี column email
                 role: 'user',
                 is_banned: false
             });
 
             if (insertError) {
-                console.error("Failed to create profile:", insertError.message);
-                // ⚠️ ถ้าขึ้น Error ตรงนี้ แปลว่าลืมตั้งค่า RLS Policy ใน Supabase (ดูวิธีแก้ด้านล่าง)
+                // ถ้ายังแดงแสดงว่า RLS Policy ยังผิดอยู่ (เลือก SELECT แทน INSERT)
+                console.error("🔥 Insert Failed! Check RLS Policy:", insertError.message);
             } else {
-                console.log("✅ Profile created:", displayName);
+                console.log("✅ Profile created successfully");
             }
         }
     } catch (err) {
-        console.error("Error checking profile:", err);
+        console.error("Profile Check Error:", err);
     }
   };
 
@@ -90,20 +92,17 @@ export default function RoleSelection() {
     }
   };
 
-  // 🔥 แสดงหน้า Loading ก่อน เพื่อกันการกระพริบหรือ Redirect ผิดพลาด
   if (loading) {
       return (
-        <div className="h-screen w-full flex flex-col items-center justify-center bg-soulis-900 text-white gap-4">
+        <div className="h-screen w-full flex flex-col items-center justify-center bg-soulis-900 text-white gap-4 font-sans">
             <Loader2 size={48} className="animate-spin text-soulis-400" />
-            <p className="animate-pulse text-soulis-200">กำลังเชื่อมต่อกับจิตวิญญาณของคุณ...</p>
+            <p className="animate-pulse text-soulis-200">กำลังยืนยันตัวตน...</p>
         </div>
       );
   }
 
   return (
-    // 🔥 แก้ไข Layout หลัก: ให้เลื่อนได้ และมีความสูงเต็มจอ
     <div className="h-[100dvh] w-full overflow-y-auto overflow-x-hidden bg-transparent font-sans relative safe-pb">
-      
       <Helmet>
         <title>เลือกบทบาท - Soulis คุณอยากระบายหรือรับฟัง?</title>
         <meta name="robots" content="noindex" />
