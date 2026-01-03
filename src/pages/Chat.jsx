@@ -79,8 +79,8 @@ export default function Chat() {
     if (channelRef.current) supabase.removeChannel(channelRef.current);
   };
 
-  // 🔥 ฟังก์ชันจบแชท: ล็อคไม่ให้คนโดนรีพอร์ตเข้าหน้า Review ได้เด็ดขาด
-  const finalExit = async () => {
+  // 🔥 [FIXED] เพิ่ม Parameter 'endType' เพื่อรับรู้ว่าจบเพราะโดน Report หรือไม่
+  const finalExit = async (endType = 'normal') => {
     if (isFinished.current) return;
     isFinished.current = true; 
     killSystem();
@@ -88,34 +88,32 @@ export default function Chat() {
     setShowConfirmEnd(false);
     setShowDisconnectWarning(false);
 
-    const myId = currentUserIdRef.current;
     const isTalkerMode = amITalkerRef.current;
 
-    // 🕵️ หน่วงเวลาเล็กน้อย (500ms) เพื่อให้แน่ใจว่า Report จากอีกฝั่งบันทึกลง DB เสร็จแล้ว
-    await new Promise(resolve => setTimeout(resolve, 500));
-
-    // เช็คประวัติการแจ้งความในห้องนี้
-    const { data: report } = await supabase
-      .from('reports')
-      .select('id')
-      .or(`reporter_id.eq.${myId},reported_id.eq.${myId}`)
-      .eq('status', 'pending')
-      .maybeSingle();
-
-    if (isTalkerMode && !report) {
-        // เฉพาะ Talker ที่ใสสะอาดจริงๆ ถึงจะเห็นหน้า Rating
-        setShowRating(true); 
-    } else {
-        // คนแจ้ง, คนโดนแจ้ง, หรือ Listener ไปหน้าขอบคุณทันที
+    // ถ้าจบเพราะโดน Report (ได้รับรหัส ###REPORT_END###)
+    // หรือเป็นคนกด Report เอง -> ให้ข้ามหน้ารีวิวไปเลย
+    if (endType === 'reported' || endType === 'reporter') {
         const destination = isTalkerMode ? '/thank-you-talker' : '/thank-you-listener';
         navigate(destination, { replace: true });
+        return;
+    }
+
+    // Logic เดิม: เช็คเผื่อไว้ (Fallback)
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    // เฉพาะ Talker ที่จบแบบปกติ (normal) เท่านั้นถึงจะได้รีวิว
+    if (isTalkerMode) {
+        setShowRating(true); 
+    } else {
+        navigate('/thank-you-listener', { replace: true });
     }
   };
 
   const fetchMessages = async () => {
     if (isFinished.current) return;
     const { data: msgs } = await supabase.from('messages').select('*').eq('match_id', matchId).order('created_at', { ascending: true });
-    if (msgs) setMessages(msgs.filter(m => m.content !== '###END###'));
+    // 🔥 [FIXED] กรองข้อความจบการสนทนาออก ไม่ให้ User เห็น
+    if (msgs) setMessages(msgs.filter(m => m.content !== '###END###' && m.content !== '###REPORT_END###'));
   };
 
   useEffect(() => {
@@ -166,14 +164,22 @@ export default function Chat() {
          }
       })
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `match_id=eq.${matchId}` }, (payload) => {
-         if (payload.new.content === '###END###') finalExit();
-         else if (payload.new.sender_id !== user.id) {
+         // 🔥 [FIXED] เช็คประเภทการจบแชทจากข้อความ
+         if (payload.new.content === '###END###') {
+             finalExit('normal');
+         } else if (payload.new.content === '###REPORT_END###') {
+             finalExit('reported'); // ถ้าเจออันนี้ แปลว่าเราโดน Report (หรือคู่กรณีจบด้วย Report)
+         } else if (payload.new.sender_id !== user.id) {
              fetchMessages();
              playNotification(); 
          }
       })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'matches', filter: `id=eq.${matchId}` }, (payload) => {
-         if (payload.new.is_active === false) finalExit();
+         if (payload.new.is_active === false) {
+             // ถ้า Matches ถูกปิดโดยไม่มีข้อความ (กรณีขัดข้อง) ให้จบปกติ
+             // แต่ถ้ามีข้อความ ###REPORT_END### มาก่อนหน้านี้ มันจะเข้า case บนไปแล้ว
+             if (!isFinished.current) finalExit('normal');
+         }
       })
       .subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {
@@ -184,7 +190,9 @@ export default function Chat() {
       intervalRef.current = setInterval(async () => {
           if (isFinished.current) return;
           const { data } = await supabase.from('matches').select('is_active').eq('id', matchId).single();
-          if (!data || data.is_active === false) finalExit(); 
+          if (!data || data.is_active === false) {
+              if (!isFinished.current) finalExit('normal'); 
+          }
       }, 3000);
     };
     setupChat();
@@ -204,9 +212,10 @@ export default function Chat() {
   };
 
   const confirmEndChat = async () => {
+    // จบปกติ ส่ง ###END###
     await supabase.from('messages').insert([{ match_id: matchId, sender_id: userId, content: '###END###' }]);
     await supabase.from('matches').update({ is_active: false }).eq('id', matchId);
-    finalExit();
+    finalExit('normal');
   };
 
   const handleSubmitReport = async () => {
@@ -217,19 +226,19 @@ export default function Chat() {
     if (!confirm("ยืนยันรายงาน? ระบบจะจบการสนทนาทันที")) return;
 
     try {
-        // 1. บันทึก Report ลง DB ก่อนทำอย่างอื่น
+        // 1. บันทึก Report
         await supabase.from('reports').insert({ 
             reporter_id: userId, reported_id: partnerId, reason: finalReason, chat_evidence: messages, status: 'pending' 
         });
         
-        // 2. ส่ง ###END### เพื่อบอกให้อีกฝั่งออก
-        await supabase.from('messages').insert([{ match_id: matchId, sender_id: userId, content: '###END###' }]);
+        // 2. 🔥 [FIXED] ส่ง ###REPORT_END### แทน ###END### เพื่อบอกอีกฝั่งว่า "นี่คือการจบแบบ Report นะ"
+        await supabase.from('messages').insert([{ match_id: matchId, sender_id: userId, content: '###REPORT_END###' }]);
         
         // 3. ปิดแมตช์
         await supabase.from('matches').update({ is_active: false }).eq('id', matchId);
         
-        // 4. ดีดตัวเองออก
-        finalExit();
+        // 4. ดีดตัวเองออก (ระบุว่าเราเป็น reporter จะได้ไม่ต้องรีวิว)
+        finalExit('reporter');
     } catch (err) { alert(err.message); }
   };
 
@@ -239,7 +248,6 @@ export default function Chat() {
     navigate('/thank-you-talker', { replace: true });
   };
 
-  // UI ส่วนที่เหลือเหมือนเดิม...
   if (showReportModal) return (
       <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" style={{ height: `${viewportHeight}px` }}>
         <div className="bg-soulis-800 border border-soulis-600 p-6 rounded-2xl w-full max-w-sm flex flex-col max-h-[90%] shadow-2xl">

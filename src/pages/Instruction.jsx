@@ -59,18 +59,18 @@ export default function Instruction() {
   return (
     <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
       
-      {/* ✅ ส่วน SEO: เพิ่ม Helmet สำหรับหน้าคู่มือการใช้งาน */}
+      {/* ✅ ส่วน SEO: ปรับ Title เป็น How-to style */}
       <Helmet>
-        <title>คู่มือการใช้งาน - Soulis กติกาและมารยาท</title>
+        <title>วิธีระบายความเครียดและเป็นผู้รับฟังที่ดี - คู่มือ Soulis</title>
         <meta 
           name="description" 
-          content="อ่านกฎกติกาและมารยาทการใช้งาน Soulis สิ่งที่ควรทำและไม่ควรทำ เพื่อสร้างพื้นที่ปลอดภัยสำหรับทั้งผู้ระบายและผู้รับฟัง" 
+          content="อ่านคู่มือการเป็นผู้รับฟังที่ดี (Listener) และข้อควรระวังในการระบายความในใจ (Talker) บน Soulis เพื่อสร้างพื้นที่ปลอดภัยทางใจร่วมกัน" 
         />
         <link rel="canonical" href="https://soulis.in.th/instruction" />
         
         {/* Social Media Tags */}
-        <meta property="og:title" content="คู่มือการใช้งาน - Soulis" />
-        <meta property="og:description" content="อ่านกฎกติกาและมารยาทการใช้งาน Soulis" />
+        <meta property="og:title" content="วิธีระบายความเครียดและเป็นผู้รับฟังที่ดี - Soulis" />
+        <meta property="og:description" content="อ่านคู่มือและกติกาการใช้งาน Soulis เพื่อพื้นที่ปลอดภัย" />
         <meta property="og:url" content="https://soulis.in.th/instruction" />
       </Helmet>
 
