@@ -1,61 +1,77 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { UserCircle } from 'lucide-react';
+import { UserCircle, Loader2 } from 'lucide-react'; // เพิ่ม Icon Loader
 import { supabase } from '../supabaseClient';
 import { Helmet } from 'react-helmet-async';
 
 export default function RoleSelection() {
   const navigate = useNavigate();
   const [userId, setUserId] = useState(null);
+  const [loading, setLoading] = useState(true); // 🔥 เพิ่มสถานะ Loading
 
   useEffect(() => {
-    const checkUserAndProfile = async () => {
-      // 1. เช็ค User จาก Auth
-      const { data: { user } } = await supabase.auth.getUser();
+    // 🔥 ใช้ onAuthStateChange แทน getUser เพื่อความชัวร์หลัง Redirect
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
       
-      if (!user) {
-        navigate('/'); // ถ้าไม่ได้ Login ดีดกลับหน้าแรก
-        return;
+      if (session?.user) {
+        setUserId(session.user.id);
+        await checkAndCreateProfile(session.user);
+        setLoading(false); // โหลดเสร็จแล้ว ปล่อยให้เข้าใช้งาน
+      } else if (event === 'SIGNED_OUT' || !session) {
+        // ถ้าไม่มี Session จริงๆ ค่อยดีดกลับ
+        // แต่เราจะหน่วงเวลาเล็กน้อยเพื่อให้แน่ใจว่าไม่ใช่แค่เน็ตช้า
+        setTimeout(() => {
+            // เช็คอีกที
+            supabase.auth.getSession().then(({ data }) => {
+                if (!data.session) navigate('/');
+            });
+        }, 500);
       }
-      
-      setUserId(user.id);
+    });
 
-      // 2. เช็คว่ามีข้อมูลในตาราง profiles หรือยัง?
-      // ใช้ maybeSingle() เพื่อไม่ให้ error แดงถ้าหาไม่เจอ (จะ return null แทน)
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('id', user.id)
-        .maybeSingle();
-
-      // 3. ถ้าหาไม่เจอ (Profile เป็น null) แปลว่ายังไม่ได้สร้าง -> ให้สร้างใหม่เลย (Manual Sync)
-      if (!profile) {
-        console.log("Profile not found, creating new one...");
-        
-        // ดึงชื่อจาก Google หรือ Email
-        const googleName = user.user_metadata?.full_name;
-        const emailName = user.email?.split('@')[0];
-        const displayName = googleName || emailName || 'Unknown User';
-
-        // สร้าง Profile ใหม่
-        const { error: insertError } = await supabase.from('profiles').insert({
-            id: user.id,
-            username: displayName,
-            // email: user.email, // ⚠️ บรรทัดนี้เปิดใช้เฉพาะถ้าในตาราง profiles มี column 'email'
-            role: 'user',
-            is_banned: false,
-        });
-
-        if (insertError) {
-            console.error("Error creating profile:", insertError.message);
-        } else {
-            console.log("✅ Profile created successfully!");
-        }
-      }
+    return () => {
+      authListener.subscription.unsubscribe();
     };
-
-    checkUserAndProfile();
   }, [navigate]);
+
+  // ฟังก์ชันแยกสำหรับสร้าง Profile (เพื่อให้ Code อ่านง่าย)
+  const checkAndCreateProfile = async (user) => {
+    try {
+        // 1. ลองดึงข้อมูล Profile
+        const { data: profile, error } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('id', user.id)
+            .maybeSingle(); // ใช้ maybeSingle เพื่อไม่ให้ error แดง
+
+        // 2. ถ้าไม่มี Profile -> สร้างใหม่ทันที
+        if (!profile) {
+            console.log("Creating new profile...");
+            
+            // ดึงชื่อจาก Google Metadata
+            const googleName = user.user_metadata?.full_name;
+            const emailName = user.email?.split('@')[0];
+            const displayName = googleName || emailName || 'Unknown Soul';
+
+            const { error: insertError } = await supabase.from('profiles').insert({
+                id: user.id,
+                username: displayName,
+                // email: user.email, // ⚠️ เปิดบรรทัดนี้ถ้า Database มี column email
+                role: 'user',
+                is_banned: false
+            });
+
+            if (insertError) {
+                console.error("Failed to create profile:", insertError.message);
+                // ⚠️ ถ้าขึ้น Error ตรงนี้ แปลว่าลืมตั้งค่า RLS Policy ใน Supabase (ดูวิธีแก้ด้านล่าง)
+            } else {
+                console.log("✅ Profile created:", displayName);
+            }
+        }
+    } catch (err) {
+        console.error("Error checking profile:", err);
+    }
+  };
 
   const chooseRole = async (role) => {
     if (!userId) return;
@@ -74,20 +90,25 @@ export default function RoleSelection() {
     }
   };
 
+  // 🔥 แสดงหน้า Loading ก่อน เพื่อกันการกระพริบหรือ Redirect ผิดพลาด
+  if (loading) {
+      return (
+        <div className="h-screen w-full flex flex-col items-center justify-center bg-soulis-900 text-white gap-4">
+            <Loader2 size={48} className="animate-spin text-soulis-400" />
+            <p className="animate-pulse text-soulis-200">กำลังเชื่อมต่อกับจิตวิญญาณของคุณ...</p>
+        </div>
+      );
+  }
+
   return (
     // 🔥 แก้ไข Layout หลัก: ให้เลื่อนได้ และมีความสูงเต็มจอ
     <div className="h-[100dvh] w-full overflow-y-auto overflow-x-hidden bg-transparent font-sans relative safe-pb">
       
-      {/* ✅ ส่วน SEO: เปลี่ยนชื่อ Title ตามบริบทการใช้งาน */}
       <Helmet>
         <title>เลือกบทบาท - Soulis คุณอยากระบายหรือรับฟัง?</title>
-        <meta name="robots" content="noindex" /> {/* หน้านี้เป็นหน้าภายในที่ต้องล็อกอิน ไม่จำเป็นต้องให้ Google เก็บข้อมูล */}
+        <meta name="robots" content="noindex" />
       </Helmet>
 
-      {/* 🔥 จุดสำคัญที่แก้: 
-          - pt-24: เว้นขอบบนเยอะๆ ไม่ให้ข้อความไปชนปุ่ม Profile หรือขอบจอ
-          - pb-32: เว้นขอบล่างเยอะๆ ไม่ให้ปุ่ม Listener โดน Footer บัง
-      */}
       <div className="min-h-full flex flex-col items-center justify-center p-6 pt-24 pb-32">
 
         <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-soulis-800 via-soulis-900 to-black opacity-80 pointer-events-none -z-10"></div>
