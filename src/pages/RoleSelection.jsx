@@ -9,12 +9,53 @@ export default function RoleSelection() {
   const [userId, setUserId] = useState(null);
 
   useEffect(() => {
-    const getUser = async () => {
+    const checkUserAndProfile = async () => {
+      // 1. เช็ค User จาก Auth
       const { data: { user } } = await supabase.auth.getUser();
-      if (user) setUserId(user.id);
+      
+      if (!user) {
+        navigate('/'); // ถ้าไม่ได้ Login ดีดกลับหน้าแรก
+        return;
+      }
+      
+      setUserId(user.id);
+
+      // 2. เช็คว่ามีข้อมูลในตาราง profiles หรือยัง?
+      // ใช้ maybeSingle() เพื่อไม่ให้ error แดงถ้าหาไม่เจอ (จะ return null แทน)
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      // 3. ถ้าหาไม่เจอ (Profile เป็น null) แปลว่ายังไม่ได้สร้าง -> ให้สร้างใหม่เลย (Manual Sync)
+      if (!profile) {
+        console.log("Profile not found, creating new one...");
+        
+        // ดึงชื่อจาก Google หรือ Email
+        const googleName = user.user_metadata?.full_name;
+        const emailName = user.email?.split('@')[0];
+        const displayName = googleName || emailName || 'Unknown User';
+
+        // สร้าง Profile ใหม่
+        const { error: insertError } = await supabase.from('profiles').insert({
+            id: user.id,
+            username: displayName,
+            // email: user.email, // ⚠️ บรรทัดนี้เปิดใช้เฉพาะถ้าในตาราง profiles มี column 'email'
+            role: 'user',
+            is_banned: false,
+        });
+
+        if (insertError) {
+            console.error("Error creating profile:", insertError.message);
+        } else {
+            console.log("✅ Profile created successfully!");
+        }
+      }
     };
-    getUser();
-  }, []);
+
+    checkUserAndProfile();
+  }, [navigate]);
 
   const chooseRole = async (role) => {
     if (!userId) return;
